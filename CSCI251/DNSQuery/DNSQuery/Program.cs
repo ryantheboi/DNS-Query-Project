@@ -53,6 +53,7 @@ namespace ConsoleApplication
         public void answersParse(UdpClient client, IPEndPoint ep, string hostname)
         {
             byte[] response = client.Receive(ref ep);
+            Console.WriteLine(";; global options: +cmd");
             Console.WriteLine(";; Got answer:");
             
             var responseHex = BitConverter.ToString(response);
@@ -79,7 +80,7 @@ namespace ConsoleApplication
             // this loop grabs the next types, classes, and addresses in the response answers
             for (int i = 0; i < answers; i++)
             {
-                var name = getName(r, currIdx);
+                var name = getNamePtr(r, currIdx);
                 names[i] = name;
                 currIdx += 2; // to move past the bytes for name pointer
                 var typeNum = new StringBuilder();
@@ -88,6 +89,8 @@ namespace ConsoleApplication
                 var type = getType(typeNum);
                 types[i] = type;
                 currIdx += 2; // to move past the bytes for type
+                
+                // the following conditional statements are for parsing the addresses for the request type
                 if (type.ToString().Equals("A"))
                 {
                     currIdx = typeAParse(r, classes, addresses, i, currIdx);
@@ -96,7 +99,10 @@ namespace ConsoleApplication
                 {
                     currIdx = typeCNAMEParse(r, classes, addresses, i, currIdx);
                 }
-
+                else if (type.ToString().Equals("AAAA"))
+                {
+                    currIdx = typeAAAAParse(r, classes, addresses, i, currIdx);
+                }
             }
 
             // final printout for answers section
@@ -156,7 +162,7 @@ namespace ConsoleApplication
             classes[i] = c;
             currIdx += 2; // to move past the bytes for class
             currIdx += 6; // to move past the bytes for time to live and data length
-            var address = getName2(r, currIdx);
+            var address = getName(r, currIdx);
             addresses[i] = address;
             
             // move to the next value until pointer is reached
@@ -166,6 +172,31 @@ namespace ConsoleApplication
             }
 
             currIdx += 2; // move past 2 bytes indicating the pointer to hostname
+            return currIdx;
+        }
+        
+        /*
+         * Helper method for parsing an AAAA type response
+         * @param r - the string array representation of the response packet
+         * @param classes - the array to append the class to
+         * @param addresses - the array to append the address to
+         * @param i - the ith answer that is being parsed
+         * @param currIdx - the current ptr location in the packet, r
+         * @return - where the ptr was left off in the packet, r
+         */
+        private int typeAAAAParse(string[] r, StringBuilder[] classes, StringBuilder[] addresses, int i, int currIdx)
+        {
+            var classNum = new StringBuilder();
+            classNum.Append(r[currIdx]);
+            classNum.Append(r[currIdx + 1]);
+            var c = getClass(classNum);
+            classes[i] = c;
+            currIdx += 2; // to move past the bytes for class
+            currIdx += 6; // to move past the bytes for time to live and data length
+
+            var address = getIPv6Address(r, currIdx);
+            addresses[i] = address;
+            currIdx += 16; // to move past the bytes for address
             return currIdx;
         }
         
@@ -232,7 +263,7 @@ namespace ConsoleApplication
          * Recursive helper method to get the name from a pointer in the string array packet
          * If a name contains more than one pointer, the pointer is followed recursively
          */
-        private StringBuilder getName(string[] r, int currIdx)
+        private StringBuilder getNamePtr(string[] r, int currIdx)
         {
             var fullName = new StringBuilder();
             if (!r[currIdx].Equals("C0"))
@@ -261,7 +292,7 @@ namespace ConsoleApplication
                 idx++;
                 fullName.Append(".");
             }
-            fullName.Append(getName(r, idx - 1)); // idx - 1 because we moved past the c0
+            fullName.Append(getNamePtr(r, idx - 1)); // idx - 1 because we moved past the c0
 
             return fullName;
         }
@@ -270,7 +301,7 @@ namespace ConsoleApplication
          * Helper method to get the name from a pointer in the string array packet, currIdx starts at the name size
          * If a name contains more than one pointer, the pointer is followed recursively
          */
-        private StringBuilder getName2(string[] r, int currIdx)
+        private StringBuilder getName(string[] r, int currIdx)
         {
             var fullName = new StringBuilder();
             
@@ -373,6 +404,9 @@ namespace ConsoleApplication
 
         /*
          * Helper class to get the IPv4 address from where it begins in the array
+         * IPv4 addresses are 32 bits, so they are 4 bytes long
+         * The address is represented as 4 groups, each of decimal representations of 2 hex digits
+         * Each group is separated by '.'
          */
         private StringBuilder getIPv4Address(string[] r, int currIdx)
         {
@@ -387,14 +421,112 @@ namespace ConsoleApplication
             }
             return address;
         }
+        
+        /*
+         * Helper class to get the IPv6 address from where it begins in the array
+         * IPv6 addresses are 128 bits, so they are 16 bytes long
+         * The address is represented as 8 groups of 4 hex digits (or 2 bytes)
+         * Each group is separated by ':'
+         * An IPv6 address can be any of following forms:
+         * 1. all hex digits are lower case
+         * 2. leading 0s in a group are omitted, but each group has at least 1 hex digit
+         * 3. 1 or more consecutive groups of only 0s can be replaced with 1 empty group as '::'
+         */
+        private StringBuilder getIPv6Address(string[] r, int currIdx)
+        {
+            var address = new StringBuilder();
+            for (var i = 0; i < 16; i++)
+            {
+                address.Append(r[currIdx + i]);
+                if (i % 2 == 1 && i != 15)
+                {
+                    address.Append(":");
+                }
+            }
+
+            // form1 = convert IPv6 address to all lowercase
+            var form1 = address.ToString().ToLower();
+            
+            // form2 = remove trailing 0s, but leave at least 1 hex digit per group
+            var form2 = new StringBuilder();
+            var tempArr = form1.Split(":");
+            for (var i = 0; i < tempArr.Length; i++)
+            {
+                var temp = tempArr[i];
+                if (tempArr[i].Equals("0000"))
+                {
+                    temp = "0";
+                }
+                else if (tempArr[i].StartsWith("0"))
+                {
+                    temp = tempArr[i].TrimStart('0');
+                }
+                
+                form2.Append(temp);
+                if (i != tempArr.Length - 1)
+                {
+                    form2.Append(":");
+                }
+            }
+            address = form2;
+            
+            // form3 = replace 2+ consecutive groups of 0s with ::
+            var form3 = new StringBuilder();
+            tempArr = form2.ToString().Split(":");
+            var prev0 = false;
+            var counter0 = 0;
+            for (var i = 0; i < tempArr.Length; i++)
+            {
+                var temp = tempArr[i];
+                if (prev0)
+                {
+                    if (temp.Equals("0")) // there is a consecutive 0 group
+                    {
+                        tempArr[i - 1] = "";
+                        counter0++;
+                    }
+                    else // there isn't another 0 group
+                    {
+                        if (counter0 >= 2){ // there were multiple consecutive 0 groups
+                            tempArr[i - 1] = ":";
+                            prev0 = false;
+                            counter0 = 0;
+                        }
+                        else // there was only one 0 group
+                        {
+                            tempArr[i - 1] = "0";
+                            prev0 = false;
+                            counter0 = 0;
+                        }
+                    }
+                }
+                else if (temp.Equals("0"))
+                {
+                    prev0 = true;
+                    counter0++;
+                }
+            }
+            
+            for (var i = 0; i < tempArr.Length; i++)
+            {
+                form3.Append(tempArr[i]);
+                if (!tempArr[i].Equals("") && !tempArr[i].Equals(":") && (i != tempArr.Length - 1))
+                {
+                    form3.Append(":");
+                }
+            }
+            
+            address = form3;
+            return address;
+        }
 
     public static void Main(string[] args)
         {
             var p = new Program();
             //p.aType("snapchat.com");
             //p.cnameType("www.rit.edu");
-            byte[] type = {0x00, 0x01};
-            p.dnsQuery("8.8.8.8", type, "www.snapchat.com");
+            byte[] type = {0x00, 0x1c};
+            p.dnsQuery("8.8.8.8", type, "google.com");
 
         }
     }
