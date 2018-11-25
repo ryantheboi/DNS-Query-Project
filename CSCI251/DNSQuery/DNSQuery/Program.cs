@@ -335,6 +335,7 @@ namespace ConsoleApplication
 
             return fullName;
         }
+        
         /*
          * Helper method to get the transaction ID from its 2 byte representation
          */
@@ -523,8 +524,6 @@ namespace ConsoleApplication
     public static void Main(string[] args)
         {
             var p = new Program();
-            //p.aType("snapchat.com");
-            //p.cnameType("www.rit.edu");
             byte[] type = {0x00, 0x1c};
             p.dnsQuery("8.8.8.8", type, "google.com");
 
