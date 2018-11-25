@@ -619,13 +619,16 @@ namespace ConsoleApplication
                 hostname = args[0];
             }
 
-            // make the DNS query and return the time it took & time it occurred
-            var dateNow = p.dnsQuery(dnsServer, type, hostname);
-            
-            Console.WriteLine();
-            Console.WriteLine(";; Query time: " + dateNow[0] + " msec");
-            Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")" );
-            Console.WriteLine(";; WHEN: " + dateNow[1]);
+            // try to make the DNS query and return the time it took & time it occurred
+            try
+            {
+                var dateNow = p.dnsQuery(dnsServer, type, hostname);
+                Console.WriteLine();
+                Console.WriteLine(";; Query time: " + dateNow[0] + " msec");
+                Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")" );
+                Console.WriteLine(";; WHEN: " + dateNow[1]);
+            }
+            catch{}
         }
     }
 }
