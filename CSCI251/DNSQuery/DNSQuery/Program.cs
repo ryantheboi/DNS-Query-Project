@@ -171,7 +171,7 @@ namespace ConsoleApplication
             var c = getClass(classNum);
             classes[i] = c;
             currIdx += 2; // to move past the bytes for class
-
+            
             timeouts[i] = getTimeout(r, currIdx);
             currIdx += 6; // to move past the bytes for time to live and data length
 
@@ -206,13 +206,21 @@ namespace ConsoleApplication
             var address = getName(r, currIdx);
             addresses[i] = address;
             
-            // move to the next value until pointer is reached
-            while (!r[currIdx].Equals("C0"))
+            // move to the next value until pointer or null terminator is reached
+            while (!r[currIdx].Equals("C0") && !r[currIdx].Equals("00"))
             {
                 currIdx++;
             }
 
-            currIdx += 2; // move past 2 bytes indicating the pointer to hostname
+            if (r[currIdx].Equals("C0"))
+            {
+                currIdx += 2; // move past 2 bytes indicating the pointer to hostname
+            }
+
+            if (r[currIdx].Equals("00"))
+            {
+                currIdx += 1; // move past 1 byte indicating the the null terminator
+            }
             return currIdx;
         }
         
