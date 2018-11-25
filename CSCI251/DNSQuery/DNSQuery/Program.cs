@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.Design;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -13,9 +14,17 @@ namespace ConsoleApplication
     {
         /*
          * Helper method to sent a DNS query to a specified hostname with a DNS server and request type
+         * @return timeDate - a StringBuilder array of size 2
+         *         timeDate[0] - the time it took to query
+         *         timeDate[1] - the date and time the request was made
          */
-        public IPEndPoint dnsQuery(string dnsServer, byte[] type, string hostname)
+        public StringBuilder[] dnsQuery(string dnsServer, byte[] type, string hostname)
         {
+            var timeDate = new StringBuilder[2];
+               
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
             var client = new UdpClient();
             IPEndPoint ep = new IPEndPoint(IPAddress.Parse(dnsServer), 53);
             client.Connect(ep);
@@ -42,12 +51,34 @@ namespace ConsoleApplication
             byte[] classIN = {0x00, 0x01};
             dnsQueryFull = dnsQueryFull.Concat(type).Concat(classIN).ToArray();
             
-            // send the entire query and return the endpoint to be received
+            // send the entire query, record the time it took to send, record the time now
             client.Send(dnsQueryFull, dnsQueryFull.Length);
-
+            stopwatch.Stop();
+            
+            var dateNow = new StringBuilder();
+            var date = DateTime.Now.GetDateTimeFormats()[104];
+            date = date.Replace(",", "");
+            var tempArr = date.Split(" ");
+            var temp = tempArr[1];
+            tempArr[1] = tempArr[2];
+            tempArr[2] = temp;
+            for (int i = 0; i < tempArr.Length; i++)
+            {
+                dateNow.Append(tempArr[i]);
+                dateNow.Append(" ");
+            }
+            var year = DateTime.Now.GetDateTimeFormats()[132].Split(" ")[1];
+            dateNow.Append(year);
+            var time = new StringBuilder();
+            time.Append(stopwatch.ElapsedMilliseconds);
+            
+            timeDate[0] = time;
+            timeDate[1] = dateNow;
+            
+            // receive and parse the response
             answersParse(client, ep, hostname);
                 
-            return ep;
+            return timeDate;
         }
         
         public void answersParse(UdpClient client, IPEndPoint ep, string hostname)
@@ -523,10 +554,40 @@ namespace ConsoleApplication
 
     public static void Main(string[] args)
         {
+            // Default values for DNS server: 8.8.8.8 and type: A
             var p = new Program();
-            byte[] type = {0x00, 0x1c};
-            p.dnsQuery("8.8.8.8", type, "google.com");
+            string dnsServer = "8.8.8.8";
+            byte[] type = {0x00, 0x01};
+            var hostname = "";
+            if (args.Length == 3)
+            {
+                dnsServer = args[0];
+                if (args[1].Equals("AAAA"))
+                {
+                    type[1] = 0x1c;
+                }
+                hostname = args[2];
+            }
+            else if (args.Length == 2)
+            {
+                if (args[0].Equals("AAAA"))
+                {
+                    type[1] = 0x1c;
+                }
+                hostname = args[1];
+            }
+            else if (args.Length == 1)
+            {
+                hostname = args[0];
+            }
 
+            // make the DNS query and return the time it took & time it occurred
+            var dateNow = p.dnsQuery(dnsServer, type, hostname);
+            
+            Console.WriteLine();
+            Console.WriteLine(";; Query time: " + dateNow[0] + " msec");
+            Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")" );
+            Console.WriteLine(";; WHEN: " + dateNow[1]);
         }
     }
 }
