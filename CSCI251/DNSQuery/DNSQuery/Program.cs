@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 
@@ -594,11 +595,45 @@ namespace ConsoleApplication
             return address;
         }
 
+        /*
+         * Helper method to get the local DNS server
+         */
+        public IPAddress GetLocalDnsAddress()
+        {
+            var dnsAddress = new IPAddress(0);
+            try
+            {
+                NetworkInterface[] adapters  = NetworkInterface.GetAllNetworkInterfaces();
+                foreach (NetworkInterface adapter in adapters)
+                {
+                    IPInterfaceProperties adapterProperties = adapter.GetIPProperties();
+                    IPAddressCollection dnsServers = adapterProperties.DnsAddresses;
+                    if (dnsServers.Count > 0)
+                    {
+                        foreach (IPAddress dns in dnsServers)
+                        {
+                            // look for an available IPv4 address of size 8 hex digits
+                            var dnsHex = BitConverter.ToString(Encoding.Default.GetBytes(dns.ToString()));
+                            var dnsLength = dnsHex.Split("-").Length;
+                            if (dnsLength == 11) // this dns addr contains 11 hex digits, minus 3 for the '.'
+                            {
+                                dnsAddress = dns;
+                                return dnsAddress;
+                            }
+                                dnsAddress = dns; // else get the last dns address available
+                        }
+                    }
+                }
+            }
+            catch{}
+
+            return dnsAddress;
+        }
     public static void Main(string[] args)
         {
-            // Default values for DNS server: 8.8.8.8 and type: A
+            // Default values for DNS server: the one the OS is set to and type: A
             var p = new Program();
-            string dnsServer = "8.8.8.8";
+            string dnsServer = p.GetLocalDnsAddress().ToString();
             byte[] type = {0x00, 0x01};
             var hostname = "";
             if (args.Length == 3)
