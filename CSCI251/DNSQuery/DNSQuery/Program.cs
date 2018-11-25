@@ -40,22 +40,26 @@ namespace ConsoleApplication
 
             // Concatenate every byte into DNS Query
             byte[] dnsQuery = transactionID.Concat(flags)
-                .Concat(header)
-                .Concat(cnameLength)
-                .Concat(cnameBytes)
-                .Concat(hostnameLength)
-                .Concat(hostnameBytes)
-                .Concat(domainLength)
-                .Concat(domainBytes)
-                .Concat(nullTerminate)
-                .Concat(typeA)
-                .Concat(classIN)
-                .ToArray();
+                                           .Concat(header)
+                                           .Concat(cnameLength)
+                                           .Concat(cnameBytes)
+                                           .Concat(hostnameLength)
+                                           .Concat(hostnameBytes)
+                                           .Concat(domainLength)
+                                           .Concat(domainBytes)
+                                           .Concat(nullTerminate)
+                                           .Concat(typeA)
+                                           .Concat(classIN)
+                                           .ToArray();
             client.Send(dnsQuery, dnsQuery.Length);
 
             byte[] response = client.Receive(ref ep);
             var responseHex = BitConverter.ToString(response);
             var r = responseHex.Split("-");
+            Console.WriteLine(";; Got answer:");
+
+            // initial print of the info in the 12 byte header
+            printHeader(r);
 
             // to get the type
             var hostnameOffset = cnameLength[0] + hostnameLength[0] + domainLength[0] + 4;
@@ -74,6 +78,9 @@ namespace ConsoleApplication
             classNum.Append(r[12 + classOffset + 1]);
             var c = getClass(classNum);
 
+            var currIdx = 12 + classOffset + 2;
+            Console.WriteLine(r[currIdx] + " " + currIdx);
+            
             // to get the address
             var classLiveDataOffset = 8;
             var answerOffset = classOffset + classLiveDataOffset;
@@ -98,45 +105,8 @@ namespace ConsoleApplication
             Console.WriteLine(address);
         }
 
-        public void aType(string hostname)
+        public void aType(UdpClient client, IPEndPoint ep, string hostname)
         {
-            var p1 = new Program();
-            //p1.server();
-            var client = new UdpClient();
-            IPEndPoint ep = new IPEndPoint(IPAddress.Parse("8.8.8.8"), 53);
-            client.Connect(ep);
-
-            // the 12 byte header
-            byte[] transactionID = {0x2a, 0x9c};
-            byte[] flags = {0x01, 0x20};
-            byte[] header = {0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
-            // the host name and domain, including their lengths, terminated by null byte
-            byte[] hostnameLength = new byte[1];
-            byte[] domainLength = new byte[1];
-            byte[] hostnameBytes = Encoding.Default.GetBytes(hostname.Split('.')[0]);
-            byte[] domainBytes = Encoding.Default.GetBytes(hostname.Split('.')[1]);
-            hostnameLength[0] = (byte) hostnameBytes.Length;
-            domainLength[0] = (byte) domainBytes.Length;
-            byte[] nullTerminate = {0x00};
-
-            // A type record and Class IN
-            byte[] typeA = {0x00, 0x01};
-            byte[] classIN = {0x00, 0x01};
-
-            // Concatenate every byte into DNS Query
-            byte[] dnsQuery = transactionID.Concat(flags)
-                .Concat(header)
-                .Concat(hostnameLength)
-                .Concat(hostnameBytes)
-                .Concat(domainLength)
-                .Concat(domainBytes)
-                .Concat(nullTerminate)
-                .Concat(typeA)
-                .Concat(classIN)
-                .ToArray();
-            client.Send(dnsQuery, dnsQuery.Length);
-
             byte[] response = client.Receive(ref ep);
             Console.WriteLine(";; Got answer:");
             
@@ -151,10 +121,9 @@ namespace ConsoleApplication
             
             // to move past the queries section
             var answersOffset = 12; 
-            var hostnameOffset = hostnameLength[0] + domainLength[0] + 3;
+            var hostnameOffset = hostname.Length + 2;
             var typeClassOffset = 4;
             var ptrOffset = 2;
-            
 
             // to get to the start of the answers section
             var types = new StringBuilder[answers];
@@ -200,6 +169,45 @@ namespace ConsoleApplication
             }
         }
 
+        /*
+         * Helper method to sent a DNS query to a specified hostname with a DNS server and request type
+         */
+        public IPEndPoint dnsQuery(string dnsServer, byte[] type, string hostname)
+        {
+            var client = new UdpClient();
+            IPEndPoint ep = new IPEndPoint(IPAddress.Parse(dnsServer), 53);
+            client.Connect(ep);
+
+            // the 12 byte header
+            byte[] transactionID = {0x2a, 0x9c};
+            byte[] flags = {0x01, 0x20};
+            byte[] header = {0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+            // concatenate with the host name and domain, including their lengths, terminated by null byte
+            var hostnameSplit = hostname.Split(".");
+            byte[] dnsQueryFull = transactionID.Concat(flags).Concat(header).ToArray();
+            foreach (var hostnamePart in hostnameSplit)
+            {
+                byte[] hostnamePartLength = new byte[1];
+                byte[] hostnamePartBytes = Encoding.Default.GetBytes(hostnamePart);
+                hostnamePartLength[0] = (byte)hostnamePartBytes.Length;
+                dnsQueryFull = dnsQueryFull.Concat(hostnamePartLength).Concat(hostnamePartBytes).ToArray();
+            }
+            byte[] nullTerminate = {0x00};
+            dnsQueryFull = dnsQueryFull.Concat(nullTerminate).ToArray();
+
+            // concatenate type record and Class IN
+            byte[] classIN = {0x00, 0x01};
+            dnsQueryFull = dnsQueryFull.Concat(type).Concat(classIN).ToArray();
+            
+            // send the entire query and return the endpoint to be received
+            client.Send(dnsQueryFull, dnsQueryFull.Length);
+
+            aType(client, ep, hostname);
+                
+            return ep;
+        }
+        
         /*
          * Helper method to print out the 12 byte header information
          */
@@ -346,7 +354,11 @@ namespace ConsoleApplication
     public static void Main(string[] args)
         {
             var p = new Program();
-            p.aType("snapchat.com");
+            //p.aType("snapchat.com");
+            //p.cnameType("www.rit.edu");
+            byte[] type = {0x00, 0x01};
+            p.dnsQuery("8.8.8.8", type, "snapchat.com");
+
         }
     }
 }
