@@ -11,164 +11,6 @@ namespace ConsoleApplication
 {
     public class Program
     {
-        public void cnameType(string hostname)
-        {
-            var client = new UdpClient();
-            IPEndPoint ep = new IPEndPoint(IPAddress.Parse("8.8.8.8"), 53);
-            client.Connect(ep);
-
-            // the 12 byte header
-            byte[] transactionID = {0x2a, 0x9c};
-            byte[] flags = {0x01, 0x20};
-            byte[] header = {0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
-            // the host name and domain, including their lengths, terminated by null byte
-            byte[] cnameLength = new byte[1];
-            byte[] hostnameLength = new byte[1];
-            byte[] domainLength = new byte[1];
-            byte[] cnameBytes = Encoding.Default.GetBytes((hostname.Split('.')[0]));
-            byte[] hostnameBytes = Encoding.Default.GetBytes(hostname.Split('.')[1]);
-            byte[] domainBytes = Encoding.Default.GetBytes(hostname.Split('.')[2]);
-            cnameLength[0] = (byte) cnameBytes.Length;
-            hostnameLength[0] = (byte) hostnameBytes.Length;
-            domainLength[0] = (byte) domainBytes.Length;
-            byte[] nullTerminate = {0x00};
-
-            // A type record and Class IN
-            byte[] typeA = {0x00, 0x01};
-            byte[] classIN = {0x00, 0x01};
-
-            // Concatenate every byte into DNS Query
-            byte[] dnsQuery = transactionID.Concat(flags)
-                                           .Concat(header)
-                                           .Concat(cnameLength)
-                                           .Concat(cnameBytes)
-                                           .Concat(hostnameLength)
-                                           .Concat(hostnameBytes)
-                                           .Concat(domainLength)
-                                           .Concat(domainBytes)
-                                           .Concat(nullTerminate)
-                                           .Concat(typeA)
-                                           .Concat(classIN)
-                                           .ToArray();
-            client.Send(dnsQuery, dnsQuery.Length);
-
-            byte[] response = client.Receive(ref ep);
-            var responseHex = BitConverter.ToString(response);
-            var r = responseHex.Split("-");
-            Console.WriteLine(";; Got answer:");
-
-            // initial print of the info in the 12 byte header
-            printHeader(r);
-
-            // to get the type
-            var hostnameOffset = cnameLength[0] + hostnameLength[0] + domainLength[0] + 4;
-            var typeClassOffset = 4;
-            var ptrOffset = 2;
-            var typeOffset = hostnameOffset + typeClassOffset + ptrOffset;
-            var typeNum = new StringBuilder();
-            typeNum.Append(r[12 + typeOffset]);
-            typeNum.Append(r[12 + typeOffset + 1]);
-            var type = getType(typeNum);
-
-            // to get the class (it should be IN for internet)
-            var classOffset = typeOffset + 2;
-            var classNum = new StringBuilder();
-            classNum.Append(r[12 + classOffset]);
-            classNum.Append(r[12 + classOffset + 1]);
-            var c = getClass(classNum);
-
-            var currIdx = 12 + classOffset + 2;
-            Console.WriteLine(r[currIdx] + " " + currIdx);
-            
-            // to get the address
-            var classLiveDataOffset = 8;
-            var answerOffset = classOffset + classLiveDataOffset;
-            var cnameOffset = Convert.ToInt32(r[12 + answerOffset], 16); // the length of the CNAME
-            cnameOffset += 2; // to move to the pointer to hostname
-            var nameOffset = answerOffset + cnameOffset;
-            var nameLoc = Convert.ToInt32(r[12 + nameOffset], 16); // ***************where the unaliased hostname begins
-
-            var addressOffset = nameOffset + 13; // to move to the address
-
-            Console.WriteLine(r[addressOffset + 12]);
-            var address = new StringBuilder();
-            for (var i = 0; i < 4; i++)
-            {
-                address.Append(Convert.ToInt32(r[12 + addressOffset + i], 16));
-                if (i != 3)
-                {
-                    address.Append(".");
-                }
-            }
-
-            Console.WriteLine(address);
-        }
-
-        public void aType(UdpClient client, IPEndPoint ep, string hostname)
-        {
-            byte[] response = client.Receive(ref ep);
-            Console.WriteLine(";; Got answer:");
-            
-            var responseHex = BitConverter.ToString(response);
-            var r = responseHex.Split("-");
-            
-            // initial print of the info in the 12 byte header
-            printHeader(r);
-
-            // get the number of answers in the response
-            var answers = getAnswers(r);
-            
-            // to move past the queries section
-            var answersOffset = 12; 
-            var hostnameOffset = hostname.Length + 2;
-            var typeClassOffset = 4;
-            var ptrOffset = 2;
-
-            // to get to the start of the answers section
-            var types = new StringBuilder[answers];
-            var classes = new StringBuilder[answers];
-            var addresses = new StringBuilder[answers];
-            var currIdx = answersOffset + hostnameOffset + typeClassOffset + ptrOffset;
-            
-            // this loop grabs the next types, classes, and addresses in the response answers
-            for (int i = 0; i < answers; i++)
-            {
-                var typeNum = new StringBuilder();
-                typeNum.Append(r[currIdx]);
-                typeNum.Append(r[currIdx + 1]);
-                var type = getType(typeNum);
-                types[i] = type;
-                currIdx += 2; // to move past the bytes for type
-
-                var classNum = new StringBuilder();
-                classNum.Append(r[currIdx]);
-                classNum.Append(r[currIdx + 1]);
-                var c = getClass(classNum);
-                classes[i] = c;
-                currIdx += 2; // to move past the bytes for class
-                currIdx += 6; // to move past the bytes for time to live and data length
-
-                var address = getIPv4Address(r, currIdx);
-                addresses[i] = address;
-                currIdx += 4; // to move past the bytes for address
-                currIdx += ptrOffset;
-            }
-
-            // final printout for answers section
-            Console.WriteLine();
-            Console.WriteLine(";; ANSWER SECTION:");
-            for (int i = 0; i < answers; i++)
-            {
-                var result = new StringBuilder();
-                result.Append(hostname + ". 0 ");
-                result.Append(classes[i] + " ");
-                result.Append(types[i] + " ");
-                result.Append(addresses[i]);
-                Console.WriteLine(result);
-            }
-        }
-
         /*
          * Helper method to sent a DNS query to a specified hostname with a DNS server and request type
          */
@@ -203,9 +45,128 @@ namespace ConsoleApplication
             // send the entire query and return the endpoint to be received
             client.Send(dnsQueryFull, dnsQueryFull.Length);
 
-            aType(client, ep, hostname);
+            answersParse(client, ep, hostname);
                 
             return ep;
+        }
+        
+        public void answersParse(UdpClient client, IPEndPoint ep, string hostname)
+        {
+            byte[] response = client.Receive(ref ep);
+            Console.WriteLine(";; Got answer:");
+            
+            var responseHex = BitConverter.ToString(response);
+            var r = responseHex.Split("-");
+            
+            // initial print of the info in the 12 byte header
+            printHeader(r);
+
+            // get the number of answers in the response
+            var answers = getAnswers(r);
+            
+            // to move past the queries section
+            var answersOffset = 12; 
+            var hostnameOffset = hostname.Length + 2;
+            var typeClassOffset = 4;
+
+            // to get to the start of the answers section
+            var names = new StringBuilder[answers];
+            var types = new StringBuilder[answers];
+            var classes = new StringBuilder[answers];
+            var addresses = new StringBuilder[answers];
+            var currIdx = answersOffset + hostnameOffset + typeClassOffset;
+            
+            // this loop grabs the next types, classes, and addresses in the response answers
+            for (int i = 0; i < answers; i++)
+            {
+                var name = getName(r, currIdx);
+                names[i] = name;
+                currIdx += 2; // to move past the bytes for name pointer
+                var typeNum = new StringBuilder();
+                typeNum.Append(r[currIdx]);
+                typeNum.Append(r[currIdx + 1]);
+                var type = getType(typeNum);
+                types[i] = type;
+                currIdx += 2; // to move past the bytes for type
+                if (type.ToString().Equals("A"))
+                {
+                    currIdx = typeAParse(r, classes, addresses, i, currIdx);
+                }
+                else if (type.ToString().Equals("CNAME"))
+                {
+                    currIdx = typeCNAMEParse(r, classes, addresses, i, currIdx);
+                }
+
+            }
+
+            // final printout for answers section
+            Console.WriteLine();
+            Console.WriteLine(";; ANSWER SECTION:");
+            for (int i = 0; i < answers; i++)
+            {
+                var result = new StringBuilder();
+                result.Append(names[i] + "\t0\t");
+                result.Append(classes[i] + "\t");
+                result.Append(types[i] + "\t");
+                result.Append(addresses[i]);
+                Console.WriteLine(result);
+            }
+        }
+
+        /*
+         * Helper method for parsing an A type response
+         * @param r - the string array representation of the response packet
+         * @param classes - the array to append the class to
+         * @param addresses - the array to append the address to
+         * @param i - the ith answer that is being parsed
+         * @param currIdx - the current ptr location in the packet, r
+         * @return - where the ptr was left off in the packet, r
+         */
+        private int typeAParse(string[] r, StringBuilder[] classes, StringBuilder[] addresses, int i, int currIdx)
+        {
+            var classNum = new StringBuilder();
+            classNum.Append(r[currIdx]);
+            classNum.Append(r[currIdx + 1]);
+            var c = getClass(classNum);
+            classes[i] = c;
+            currIdx += 2; // to move past the bytes for class
+            currIdx += 6; // to move past the bytes for time to live and data length
+
+            var address = getIPv4Address(r, currIdx);
+            addresses[i] = address;
+            currIdx += 4; // to move past the bytes for address
+            return currIdx;
+        }
+        
+        /*
+         * Helper method for parsing a CNAME type response
+         * @param r - the string array representation of the response packet
+         * @param classes - the array to append the class to
+         * @param addresses - the array to append the address to
+         * @param i - the ith answer that is being parsed
+         * @param currIdx - the current ptr location in the packet, r
+         * @return - where the ptr was left off in the packet, r
+         */
+        private int typeCNAMEParse(string[] r, StringBuilder[] classes, StringBuilder[] addresses, int i, int currIdx)
+        {
+            var classNum = new StringBuilder();
+            classNum.Append(r[currIdx]);
+            classNum.Append(r[currIdx + 1]);
+            var c = getClass(classNum);
+            classes[i] = c;
+            currIdx += 2; // to move past the bytes for class
+            currIdx += 6; // to move past the bytes for time to live and data length
+            var address = getName2(r, currIdx);
+            addresses[i] = address;
+            
+            // move to the next value until pointer is reached
+            while (!r[currIdx].Equals("C0"))
+            {
+                currIdx++;
+            }
+
+            currIdx += 2; // move past 2 bytes indicating the pointer to hostname
+            return currIdx;
         }
         
         /*
@@ -247,7 +208,7 @@ namespace ConsoleApplication
             additionalNum.Append(r[10]);
             additionalNum.Append(r[11]);
             var additional = Convert.ToInt32(additionalNum.ToString(), 16);
-            headerResponse2.Append(";; flags: qr rd rq; QUERY: ");
+            headerResponse2.Append(";; flags: qr rd ra; QUERY: ");
             headerResponse2.Append(questions + ", ANSWER: ");
             headerResponse2.Append(answers + ", AUTHORITY: ");
             headerResponse2.Append(authority + ", ADDITIONAL: ");
@@ -267,6 +228,82 @@ namespace ConsoleApplication
             return answers;
         }
         
+        /*
+         * Recursive helper method to get the name from a pointer in the string array packet
+         * If a name contains more than one pointer, the pointer is followed recursively
+         */
+        private StringBuilder getName(string[] r, int currIdx)
+        {
+            var fullName = new StringBuilder();
+            if (!r[currIdx].Equals("C0"))
+            {
+                return fullName;
+            }
+            
+            // move past the byte that indicates a pointer and grab the pointer's location in the packet
+            currIdx++; 
+            var idx = Convert.ToInt32(r[currIdx], 16);
+            
+            // get name size, move past that byte, then append the entire name to fullName
+            var nameSize = Convert.ToInt32(r[idx], 16);
+            idx++;
+            
+            while (nameSize != 0 && nameSize != 192)
+            {
+                for (var i = 0; i < nameSize; i++)
+                {
+                    var chDecimal = Convert.ToInt32(r[idx], 16);
+                    var ch = (char) chDecimal;
+                    fullName.Append(ch);
+                    idx++;
+                }
+                nameSize = Convert.ToInt32(r[idx], 16);
+                idx++;
+                fullName.Append(".");
+            }
+            fullName.Append(getName(r, idx - 1)); // idx - 1 because we moved past the c0
+
+            return fullName;
+        }
+        
+        /*
+         * Helper method to get the name from a pointer in the string array packet, currIdx starts at the name size
+         * If a name contains more than one pointer, the pointer is followed recursively
+         */
+        private StringBuilder getName2(string[] r, int currIdx)
+        {
+            var fullName = new StringBuilder();
+            
+            // get name size, move past that byte, then append the entire name to fullName
+            var nameSize = Convert.ToInt32(r[currIdx], 16);
+            currIdx++;
+            
+            var idx = currIdx;
+            while (nameSize != 0)
+            {
+                for (var i = 0; i < nameSize; i++)
+                {
+                    var chDecimal = Convert.ToInt32(r[idx], 16);
+                    var ch = (char) chDecimal;
+                    fullName.Append(ch);
+                    idx++;
+                }
+                nameSize = Convert.ToInt32(r[idx], 16);
+                idx++;
+                fullName.Append(".");
+
+                // if a pointer is seen, follow that pointer in the loop
+                if (nameSize == 192)
+                {
+                    var temp = Convert.ToInt32(r[idx], 16);
+                    idx = temp;
+                    nameSize = Convert.ToInt32(r[idx], 16);
+                    idx++;
+                }
+            }
+
+            return fullName;
+        }
         /*
          * Helper method to get the transaction ID from its 2 byte representation
          */
@@ -357,7 +394,7 @@ namespace ConsoleApplication
             //p.aType("snapchat.com");
             //p.cnameType("www.rit.edu");
             byte[] type = {0x00, 0x01};
-            p.dnsQuery("8.8.8.8", type, "snapchat.com");
+            p.dnsQuery("8.8.8.8", type, "www.snapchat.com");
 
         }
     }
