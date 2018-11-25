@@ -105,6 +105,7 @@ namespace ConsoleApplication
             var names = new StringBuilder[answers];
             var types = new StringBuilder[answers];
             var classes = new StringBuilder[answers];
+            var timeouts = new StringBuilder[answers];
             var addresses = new StringBuilder[answers];
             var currIdx = answersOffset + hostnameOffset + typeClassOffset;
             
@@ -124,15 +125,15 @@ namespace ConsoleApplication
                 // the following conditional statements are for parsing the addresses for the request type
                 if (type.ToString().Equals("A"))
                 {
-                    currIdx = typeAParse(r, classes, addresses, i, currIdx);
+                    currIdx = typeAParse(r, classes, timeouts, addresses, i, currIdx);
                 }
                 else if (type.ToString().Equals("CNAME"))
                 {
-                    currIdx = typeCNAMEParse(r, classes, addresses, i, currIdx);
+                    currIdx = typeCNAMEParse(r, classes, timeouts, addresses, i, currIdx);
                 }
                 else if (type.ToString().Equals("AAAA"))
                 {
-                    currIdx = typeAAAAParse(r, classes, addresses, i, currIdx);
+                    currIdx = typeAAAAParse(r, classes, timeouts, addresses, i, currIdx);
                 }
             }
 
@@ -142,7 +143,8 @@ namespace ConsoleApplication
             for (int i = 0; i < answers; i++)
             {
                 var result = new StringBuilder();
-                result.Append(names[i] + "\t0\t");
+                result.Append(names[i] + "\t");
+                result.Append(timeouts[i] + "\t");
                 result.Append(classes[i] + "\t");
                 result.Append(types[i] + "\t");
                 result.Append(addresses[i]);
@@ -151,15 +153,17 @@ namespace ConsoleApplication
         }
 
         /*
-         * Helper method for parsing an A type response
+         * Helper method for parsing an A type response and the timeout
          * @param r - the string array representation of the response packet
          * @param classes - the array to append the class to
          * @param addresses - the array to append the address to
+         * @param timeouts - the array to append the timeout to request from authoritative server to
          * @param i - the ith answer that is being parsed
          * @param currIdx - the current ptr location in the packet, r
          * @return - where the ptr was left off in the packet, r
          */
-        private int typeAParse(string[] r, StringBuilder[] classes, StringBuilder[] addresses, int i, int currIdx)
+        private int typeAParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts, 
+            StringBuilder[] addresses, int i, int currIdx)
         {
             var classNum = new StringBuilder();
             classNum.Append(r[currIdx]);
@@ -167,6 +171,8 @@ namespace ConsoleApplication
             var c = getClass(classNum);
             classes[i] = c;
             currIdx += 2; // to move past the bytes for class
+
+            timeouts[i] = getTimeout(r, currIdx);
             currIdx += 6; // to move past the bytes for time to live and data length
 
             var address = getIPv4Address(r, currIdx);
@@ -180,11 +186,13 @@ namespace ConsoleApplication
          * @param r - the string array representation of the response packet
          * @param classes - the array to append the class to
          * @param addresses - the array to append the address to
+         * @param timeouts - the array to append the timeout to request from authoritative server to
          * @param i - the ith answer that is being parsed
          * @param currIdx - the current ptr location in the packet, r
          * @return - where the ptr was left off in the packet, r
          */
-        private int typeCNAMEParse(string[] r, StringBuilder[] classes, StringBuilder[] addresses, int i, int currIdx)
+        private int typeCNAMEParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts, 
+            StringBuilder[] addresses,int i, int currIdx)
         {
             var classNum = new StringBuilder();
             classNum.Append(r[currIdx]);
@@ -192,6 +200,8 @@ namespace ConsoleApplication
             var c = getClass(classNum);
             classes[i] = c;
             currIdx += 2; // to move past the bytes for class
+            
+            timeouts[i] = getTimeout(r, currIdx);
             currIdx += 6; // to move past the bytes for time to live and data length
             var address = getName(r, currIdx);
             addresses[i] = address;
@@ -211,11 +221,13 @@ namespace ConsoleApplication
          * @param r - the string array representation of the response packet
          * @param classes - the array to append the class to
          * @param addresses - the array to append the address to
+         * @param timeouts - the array to append the timeout to request from authoritative server to
          * @param i - the ith answer that is being parsed
          * @param currIdx - the current ptr location in the packet, r
          * @return - where the ptr was left off in the packet, r
          */
-        private int typeAAAAParse(string[] r, StringBuilder[] classes, StringBuilder[] addresses, int i, int currIdx)
+        private int typeAAAAParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts, 
+            StringBuilder[] addresses, int i, int currIdx)
         {
             var classNum = new StringBuilder();
             classNum.Append(r[currIdx]);
@@ -223,6 +235,8 @@ namespace ConsoleApplication
             var c = getClass(classNum);
             classes[i] = c;
             currIdx += 2; // to move past the bytes for class
+            
+            timeouts[i] = getTimeout(r, currIdx);
             currIdx += 6; // to move past the bytes for time to live and data length
 
             var address = getIPv6Address(r, currIdx);
@@ -367,6 +381,22 @@ namespace ConsoleApplication
             return fullName;
         }
         
+        /*
+         * Helper method to get the timeout to request from the authoritative server, found in the string array packet.
+         * currIdx starts at the location where these 4 bytes are in the packet
+         */
+        private StringBuilder getTimeout(string[] r, int currIdx)
+        {
+            var timeoutNum = new StringBuilder();
+            timeoutNum.Append(r[currIdx]);
+            timeoutNum.Append(r[currIdx + 1]);
+            timeoutNum.Append(r[currIdx + 2]);
+            timeoutNum.Append(r[currIdx + 3]);
+            
+            var timeout = new StringBuilder();
+            timeout.Append(Convert.ToInt32(timeoutNum.ToString(), 16));
+            return timeout;
+        }
         /*
          * Helper method to get the transaction ID from its 2 byte representation
          */
