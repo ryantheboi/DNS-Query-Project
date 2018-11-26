@@ -61,10 +61,14 @@ namespace ConsoleApplication
             var temp = tempArr[1];
             tempArr[1] = tempArr[2];
             tempArr[2] = temp;
+            tempArr[3] = "";
             for (int i = 0; i < tempArr.Length; i++)
             {
                 dateNow.Append(tempArr[i]);
-                dateNow.Append(" ");
+                if (!tempArr[i].Equals(""))
+                {
+                    dateNow.Append(" ");
+                }
             }
             var year = DateTime.Now.GetDateTimeFormats()[132].Split(" ")[1];
             dateNow.Append(year);
