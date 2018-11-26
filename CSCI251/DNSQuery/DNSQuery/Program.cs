@@ -19,17 +19,12 @@ namespace ConsoleApplication
     {
         /*
          * Helper method to sent a DNS query to a specified hostname with a DNS server and request type
-         * @return timeDate - a StringBuilder array of size 2
-         *         timeDate[0] - the time it took to query
-         *         timeDate[1] - the date and time the request was made
+         * @return timeDate - the date and time the request was made
          */
-        public StringBuilder[] dnsQuery(string dnsServer, byte[] type, string hostname)
+        public StringBuilder dnsQuery(string dnsServer, byte[] type, string hostname)
         {
-            var timeDate = new StringBuilder[2];
+            var timeDate = new StringBuilder();
                
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-
             var client = new UdpClient();
             IPEndPoint ep = new IPEndPoint(IPAddress.Parse(dnsServer), 53);
             client.Connect(ep);
@@ -58,7 +53,6 @@ namespace ConsoleApplication
             
             // send the entire query, record the time it took to send, record the time now
             client.Send(dnsQueryFull, dnsQueryFull.Length);
-            stopwatch.Stop();
             
             var dateNow = new StringBuilder();
             var date = DateTime.Now.GetDateTimeFormats()[104];
@@ -74,11 +68,7 @@ namespace ConsoleApplication
             }
             var year = DateTime.Now.GetDateTimeFormats()[132].Split(" ")[1];
             dateNow.Append(year);
-            var time = new StringBuilder();
-            time.Append(stopwatch.ElapsedMilliseconds);
-            
-            timeDate[0] = time;
-            timeDate[1] = dateNow;
+            timeDate = dateNow;
             
             // receive and parse the response
             answersParse(client, ep, hostname);
@@ -89,7 +79,6 @@ namespace ConsoleApplication
         public void answersParse(UdpClient client, IPEndPoint ep, string hostname)
         {
             byte[] response = client.Receive(ref ep);
-            Console.WriteLine(";; global options: +cmd");
             Console.WriteLine(";; Got answer:");
             
             var responseHex = BitConverter.ToString(response);
@@ -150,11 +139,9 @@ namespace ConsoleApplication
                 for (int i = 0; i < answers; i++)
                 {
                     var result = new StringBuilder();
-                    result.Append(names[i] + "\t");
-                    result.Append(timeouts[i] + "\t");
-                    result.Append(classes[i] + "\t");
-                    result.Append(types[i] + "\t");
-                    result.Append(addresses[i]);
+                    result.AppendFormat( "{0, -24} {1, -8} {2, -8} {3, -8} {4}", 
+                        names[i], timeouts[i], classes[i], types[i], addresses[i]);
+                    
                     Console.WriteLine(result);
                 }
             }
@@ -599,7 +586,7 @@ namespace ConsoleApplication
         }
 
         /*
-         * Helper method to get the local DNS server
+         * Helper method to get the local DNS server address
          */
         public IPAddress GetLocalDnsAddress()
         {
@@ -667,9 +654,8 @@ namespace ConsoleApplication
             {
                 var dateNow = p.dnsQuery(dnsServer, type, hostname);
                 Console.WriteLine();
-                Console.WriteLine(";; Query time: " + dateNow[0] + " msec");
                 Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")" );
-                Console.WriteLine(";; WHEN: " + dateNow[1]);
+                Console.WriteLine(";; WHEN: " + dateNow);
             }
             catch{}
         }
