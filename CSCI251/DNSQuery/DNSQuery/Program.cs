@@ -142,18 +142,21 @@ namespace ConsoleApplication
                 }
             }
 
-            // final printout for answers section
-            Console.WriteLine();
-            Console.WriteLine(";; ANSWER SECTION:");
-            for (int i = 0; i < answers; i++)
+            // final printout for answers section, if there are answers
+            if (answers > 0)
             {
-                var result = new StringBuilder();
-                result.Append(names[i] + "\t");
-                result.Append(timeouts[i] + "\t");
-                result.Append(classes[i] + "\t");
-                result.Append(types[i] + "\t");
-                result.Append(addresses[i]);
-                Console.WriteLine(result);
+                Console.WriteLine();
+                Console.WriteLine(";; ANSWER SECTION:");
+                for (int i = 0; i < answers; i++)
+                {
+                    var result = new StringBuilder();
+                    result.Append(names[i] + "\t");
+                    result.Append(timeouts[i] + "\t");
+                    result.Append(classes[i] + "\t");
+                    result.Append(types[i] + "\t");
+                    result.Append(addresses[i]);
+                    Console.WriteLine(result);
+                }
             }
         }
 
@@ -430,7 +433,7 @@ namespace ConsoleApplication
             {
                 status.Append("NOERROR");
             }
-            else
+            else // nonexistent domain, or error
             {
                 status.Append("ERROR");
             }
@@ -615,6 +618,7 @@ namespace ConsoleApplication
                             // look for an available IPv4 address of size 8 hex digits
                             var dnsHex = BitConverter.ToString(Encoding.Default.GetBytes(dns.ToString()));
                             var dnsLength = dnsHex.Split("-").Length;
+                            
                             if (dnsLength == 11) // this dns addr contains 11 hex digits, minus 3 for the '.'
                             {
                                 dnsAddress = dns;
