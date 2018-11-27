@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -24,7 +25,7 @@ namespace ConsoleApplication
         public StringBuilder dnsQuery(string dnsServer, byte[] type, string hostname)
         {
             var timeDate = new StringBuilder();
-               
+            
             var client = new UdpClient();
             IPEndPoint ep = new IPEndPoint(IPAddress.Parse(dnsServer), 53);
             client.Connect(ep);
@@ -590,50 +591,38 @@ namespace ConsoleApplication
         }
 
         /*
-         * Helper method to get the local DNS server address
+         * Helper method to get all the local DNS server addresses
          */
-        public IPAddress GetLocalDnsAddress()
+        public List<IPAddress> GetLocalDnsAddress()
         {
-            var dnsAddress = new IPAddress(0);
-            try
+            var dnsAddresses = new List<IPAddress>();
+   
+            NetworkInterface[] adapters  = NetworkInterface.GetAllNetworkInterfaces();
+            foreach (NetworkInterface adapter in adapters)
             {
-                NetworkInterface[] adapters  = NetworkInterface.GetAllNetworkInterfaces();
-                foreach (NetworkInterface adapter in adapters)
+                IPInterfaceProperties adapterProperties = adapter.GetIPProperties();
+                IPAddressCollection dnsServers = adapterProperties.DnsAddresses;
+                if (dnsServers.Count > 0)
                 {
-                    IPInterfaceProperties adapterProperties = adapter.GetIPProperties();
-                    IPAddressCollection dnsServers = adapterProperties.DnsAddresses;
-                    if (dnsServers.Count > 0)
+                    foreach (IPAddress dns in dnsServers)
                     {
-                        foreach (IPAddress dns in dnsServers)
-                        {
-                            // look for an available IPv4 address of size 8 hex digits
-                            var dnsHex = BitConverter.ToString(Encoding.Default.GetBytes(dns.ToString()));
-                            var dnsLength = dnsHex.Split("-").Length;
-                            
-                            if (dnsLength == 11) // this dns addr contains 11 hex digits, minus 3 for the '.'
-                            {
-                                dnsAddress = dns;
-                                return dnsAddress;
-                            }
-                                dnsAddress = dns; // else get the last dns address available
-                        }
+                        dnsAddresses.Add(dns.MapToIPv4());
                     }
                 }
             }
-            catch{}
-
-            return dnsAddress;
+            return dnsAddresses;
         }
     public static void Main(string[] args)
         {
             // Default values for DNS server: the one the OS is set to and type: A
             var p = new Program();
-            string dnsServer = p.GetLocalDnsAddress().ToString();
+            List<IPAddress> dnsServers = p.GetLocalDnsAddress();
+            string dnsServer = dnsServers[0].ToString();
             byte[] type = {0x00, 0x01};
             var hostname = "";
             if (args.Length == 3)
             {
-                dnsServer = args[0];
+                dnsServer = args[0];               
                 if (args[1].Equals("AAAA"))
                 {
                     type[1] = 0x1c;
@@ -654,14 +643,43 @@ namespace ConsoleApplication
             }
 
             // try to make the DNS query and return the time it took & time it occurred
-            try
+            // if there was no dns server provided in args, use the first local one that works
+            if (args.Length != 3)
             {
-                var dateNow = p.dnsQuery(dnsServer, type, hostname);
-                Console.WriteLine();
-                Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")" );
-                Console.WriteLine(";; WHEN: " + dateNow);
+                int num = 0;
+                string e = "exp";
+                while (!e.Equals(""))
+                {
+                    try
+                    {
+                        dnsServer = dnsServers[num].ToString();
+                        var dateNow = p.dnsQuery(dnsServer, type, hostname);
+                        Console.WriteLine();
+                        Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")");
+                        Console.WriteLine(";; WHEN: " + dateNow);
+                        e = "";
+
+                    }
+                    catch (Exception ex)
+                    {
+                        num++;
+                        e = ex.ToString();
+                    }
+                }
             }
-            catch{}
+            
+            else
+            {
+                try
+                {
+                    var dateNow = p.dnsQuery(dnsServer, type, hostname);
+                    Console.WriteLine();
+                    Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")");
+                    Console.WriteLine(";; WHEN: " + dateNow);
+                }
+                catch{}
+            }
+
         }
     }
 }
