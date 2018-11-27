@@ -203,7 +203,18 @@ namespace ConsoleApplication
             
             timeouts[i] = getTimeout(r, currIdx);
             currIdx += 6; // to move past the bytes for time to live and data length
-            var address = getName(r, currIdx);
+            var address = new StringBuilder();
+            
+            // if  CNAME starts as a pointer, use recursive getName function
+            // else, CNAME starts with its hex size, use iterative getName function
+            if (r[currIdx].Equals("C0")) 
+            {
+                address = getNamePtr(r, currIdx);
+            }
+            else
+            {
+                address = getName(r, currIdx);
+            }
             addresses[i] = address;
             
             // move to the next value until pointer or null terminator is reached
@@ -617,6 +628,7 @@ namespace ConsoleApplication
             // Default values for DNS server: the one the OS is set to and type: A
             var p = new Program();
             List<IPAddress> dnsServers = p.GetLocalDnsAddress();
+            var numDnsServers = dnsServers.Count;
             string dnsServer = dnsServers[0].ToString();
             byte[] type = {0x00, 0x01};
             var hostname = "";
@@ -647,8 +659,8 @@ namespace ConsoleApplication
             if (args.Length != 3)
             {
                 int num = 0;
-                string e = "exp";
-                while (!e.Equals(""))
+                string exception = "exp";
+                while (!exception.Equals("") && num < numDnsServers)
                 {
                     try
                     {
@@ -657,19 +669,20 @@ namespace ConsoleApplication
                         Console.WriteLine();
                         Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")");
                         Console.WriteLine(";; WHEN: " + dateNow);
-                        e = "";
-
+                        exception = ""; // working dns server found, break out of loop
+                        break;
                     }
                     catch (Exception ex)
                     {
                         num++;
-                        e = ex.ToString();
+                        exception = ex.ToString();
                     }
                 }
             }
             
             else
             {
+            
                 try
                 {
                     var dateNow = p.dnsQuery(dnsServer, type, hostname);
