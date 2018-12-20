@@ -18,13 +18,20 @@ namespace ConsoleApplication
 {
     public class Program
     {
+        private Stopwatch timer;
+        private StringBuilder queryTime;
+
+        private StringBuilder timeStamp;
+        
         /*
          * Helper method to sent a DNS query to a specified hostname with a DNS server and request type
          * @return timeDate - the date and time the request was made
          */
-        public StringBuilder dnsQuery(string dnsServer, byte[] type, string hostname)
+        public void dnsQuery(string dnsServer, byte[] type, string hostname)
         {
-            var timeDate = new StringBuilder();
+            timeStamp = new StringBuilder();
+            timer = new Stopwatch();
+            timer.Start();
             
             var client = new UdpClient();
             IPEndPoint ep = new IPEndPoint(IPAddress.Parse(dnsServer), 53);
@@ -73,17 +80,26 @@ namespace ConsoleApplication
             }
             var year = DateTime.Now.GetDateTimeFormats()[132].Split(" ")[1];
             dateNow.Append(year);
-            timeDate = dateNow;
+            timeStamp = dateNow;
             
             // receive and parse the response
             answersParse(client, ep, hostname);
                 
-            return timeDate;
         }
         
+        /*
+         * Method for parsing a response that was received after a valid DNS request
+         * Also stops the query time measurement as soon as response is received
+         * @param client - the UDP client that send the request
+         * @param ep - the endpoint that the client is connected to
+         * @param hostname - the hostname that was in the request
+         * @param queryTime - measure of the total time the query took for request and response
+         */
         public void answersParse(UdpClient client, IPEndPoint ep, string hostname)
         {
             byte[] response = client.Receive(ref ep);
+            timer.Stop();
+            queryTime.Append(timer.ElapsedMilliseconds.ToString());
             Console.WriteLine(";; Got answer:");
             
             var responseHex = BitConverter.ToString(response);
@@ -416,6 +432,7 @@ namespace ConsoleApplication
             timeout.Append(Convert.ToInt32(timeoutNum.ToString(), 16));
             return timeout;
         }
+        
         /*
          * Helper method to get the transaction ID from its 2 byte representation
          */
@@ -484,7 +501,7 @@ namespace ConsoleApplication
         }
 
         /*
-         * Helper class to get the IPv4 address from where it begins in the array
+         * Helper class to get the IPv4 address from where it begins in the packet array
          * IPv4 addresses are 32 bits, so they are 4 bytes long
          * The address is represented as 4 groups, each of decimal representations of 2 hex digits
          * Each group is separated by '.'
@@ -504,7 +521,7 @@ namespace ConsoleApplication
         }
         
         /*
-         * Helper class to get the IPv6 address from where it begins in the array
+         * Helper class to get the IPv6 address from where it begins in the packet array
          * IPv6 addresses are 128 bits, so they are 16 bytes long
          * The address is represented as 8 groups of 4 hex digits (or 2 bytes)
          * Each group is separated by ':'
@@ -623,9 +640,10 @@ namespace ConsoleApplication
             }
             return dnsAddresses;
         }
-    public static void Main(string[] args)
+        
+        public static void Main(string[] args)
         {
-            // Default values for DNS server: the one the OS is set to and type: A
+            // Default values: DNS server- the one the OS is set to; Request type- A
             var p = new Program();
             List<IPAddress> dnsServers = p.GetLocalDnsAddress();
             var numDnsServers = dnsServers.Count;
@@ -665,10 +683,11 @@ namespace ConsoleApplication
                     try
                     {
                         dnsServer = dnsServers[num].ToString();
-                        var dateNow = p.dnsQuery(dnsServer, type, hostname);
+                        p.dnsQuery(dnsServer, type, hostname);
                         Console.WriteLine();
+                        Console.WriteLine(";; Query time: " + p.queryTime + " msec");
                         Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")");
-                        Console.WriteLine(";; WHEN: " + dateNow);
+                        Console.WriteLine(";; WHEN: " + p.timeStamp);
                         exception = ""; // working dns server found, break out of loop
                         break;
                     }
@@ -678,6 +697,11 @@ namespace ConsoleApplication
                         exception = ex.ToString();
                     }
                 }
+
+                if (num == numDnsServers)
+                {
+                    Console.WriteLine("No local DNS servers found.  Please specify one.");
+                }
             }
             
             else
@@ -685,14 +709,14 @@ namespace ConsoleApplication
             
                 try
                 {
-                    var dateNow = p.dnsQuery(dnsServer, type, hostname);
+                    p.dnsQuery(dnsServer, type, hostname);
                     Console.WriteLine();
+                    Console.WriteLine(";; Query time: " + p.queryTime + " msec");
                     Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")");
-                    Console.WriteLine(";; WHEN: " + dateNow);
+                    Console.WriteLine(";; WHEN: " + p.timeStamp);
                 }
                 catch{}
             }
-
         }
     }
 }
