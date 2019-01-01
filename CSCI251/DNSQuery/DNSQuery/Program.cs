@@ -621,7 +621,7 @@ namespace ConsoleApplication
         /*
          * Helper method to get all the local DNS server addresses
          */
-        public List<IPAddress> GetLocalDnsAddress()
+        public List<IPAddress> GetLocalDnsAddresses()
         {
             var dnsAddresses = new List<IPAddress>();
    
@@ -641,81 +641,94 @@ namespace ConsoleApplication
             return dnsAddresses;
         }
         
-        public static void Main(string[] args)
+        public static void Main()
         {
             // Default values: DNS server- the one the OS is set to; Request type- A
             var p = new Program();
-            List<IPAddress> dnsServers = p.GetLocalDnsAddress();
+            List<IPAddress> dnsServers = p.GetLocalDnsAddresses();
             var numDnsServers = dnsServers.Count;
             string dnsServer = dnsServers[0].ToString();
             byte[] type = {0x00, 0x01};
             var hostname = "";
-            if (args.Length == 3)
+            
+            Console.WriteLine("Usage: dotnet run [DNS Server] [Request Type] [Hostname]");
+            Console.WriteLine("Enter 'exit' to exit program");
+            var input = Console.ReadLine();
+            while (!input.Equals("exit"))
             {
-                dnsServer = args[0];               
-                if (args[1].Equals("AAAA"))
+                var args = input.Split(" ");
+                if (args.Length == 3)
                 {
-                    type[1] = 0x1c;
-                }
-                hostname = args[2];
-            }
-            else if (args.Length == 2)
-            {
-                if (args[0].Equals("AAAA"))
-                {
-                    type[1] = 0x1c;
-                }
-                hostname = args[1];
-            }
-            else if (args.Length == 1)
-            {
-                hostname = args[0];
-            }
+                    dnsServer = args[0];
+                    if (args[1].Equals("AAAA"))
+                    {
+                        type[1] = 0x1c;
+                    }
 
-            // try to make the DNS query and return the time it took & time it occurred
-            // if there was no dns server provided in args, use the first local one that works
-            if (args.Length != 3)
-            {
-                int num = 0;
-                string exception = "exp";
-                while (!exception.Equals("") && num < numDnsServers)
+                    hostname = args[2];
+                }
+                else if (args.Length == 2)
                 {
+                    if (args[0].Equals("AAAA"))
+                    {
+                        type[1] = 0x1c;
+                    }
+
+                    hostname = args[1];
+                }
+                else if (args.Length == 1)
+                {
+                    hostname = args[0];
+                }
+
+                // try to make the DNS query and return the time it took & time it occurred
+                // if there was no dns server provided in args, use the first local one that works
+                if (args.Length != 3)
+                {
+                    int num = 0;
+                    string exception = "exp";
+                    while (!exception.Equals("") && num < numDnsServers)
+                    {
+                        try
+                        {
+                            dnsServer = dnsServers[num].ToString();
+                            p.dnsQuery(dnsServer, type, hostname);
+                            Console.WriteLine();
+                            Console.WriteLine(";; Query time: " + p.queryTime + " msec");
+                            Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")");
+                            Console.WriteLine(";; WHEN: " + p.timeStamp);
+                            exception = ""; // working dns server found, break out of loop
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            num++;
+                            exception = ex.ToString();
+                        }
+                    }
+
+                    if (num == numDnsServers)
+                    {
+                        Console.WriteLine("No local DNS servers found.  Please specify one.");
+                    }
+                }
+
+                else
+                {
+
                     try
                     {
-                        dnsServer = dnsServers[num].ToString();
                         p.dnsQuery(dnsServer, type, hostname);
                         Console.WriteLine();
                         Console.WriteLine(";; Query time: " + p.queryTime + " msec");
                         Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")");
                         Console.WriteLine(";; WHEN: " + p.timeStamp);
-                        exception = ""; // working dns server found, break out of loop
-                        break;
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        num++;
-                        exception = ex.ToString();
                     }
                 }
-
-                if (num == numDnsServers)
-                {
-                    Console.WriteLine("No local DNS servers found.  Please specify one.");
-                }
-            }
-            
-            else
-            {
-            
-                try
-                {
-                    p.dnsQuery(dnsServer, type, hostname);
-                    Console.WriteLine();
-                    Console.WriteLine(";; Query time: " + p.queryTime + " msec");
-                    Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")");
-                    Console.WriteLine(";; WHEN: " + p.timeStamp);
-                }
-                catch{}
+                input = Console.ReadLine();
             }
         }
     }
