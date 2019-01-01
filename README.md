@@ -1,2 +1,2 @@
-# CSCI264
-Dedicated repo for ascension part 2: CSCI264
+# DNS Query Project
+Recreate the functionality of the linux dig tool in C#
