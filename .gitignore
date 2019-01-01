@@ -9,3 +9,8 @@
 *.props
 *.targets
 *.json
+
+# .idea from rider
+*.xml
+*.iml
+*.sln
