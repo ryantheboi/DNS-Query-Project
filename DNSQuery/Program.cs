@@ -19,9 +19,9 @@ namespace ConsoleApplication
     public class Program
     {
         private Stopwatch timer;
-        private StringBuilder queryTime;
+        private String queryTime;
 
-        private StringBuilder timeStamp;
+        private String timeStamp;
         
         /*
          * Helper method to sent a DNS query to a specified hostname with a DNS server and request type
@@ -29,7 +29,6 @@ namespace ConsoleApplication
          */
         public void dnsQuery(string dnsServer, byte[] type, string hostname)
         {
-            timeStamp = new StringBuilder();
             timer = new Stopwatch();
             timer.Start();
             
@@ -61,30 +60,12 @@ namespace ConsoleApplication
             
             // send the entire query, record the time it took to send, record the time now
             client.Send(dnsQueryFull, dnsQueryFull.Length);
-            
-            var dateNow = new StringBuilder();
-            var date = DateTime.Now.GetDateTimeFormats()[104];
-            date = date.Replace(",", "");
-            var tempArr = date.Split(" ");
-            var temp = tempArr[1];
-            tempArr[1] = tempArr[2];
-            tempArr[2] = temp;
-            tempArr[3] = "";
-            for (int i = 0; i < tempArr.Length; i++)
-            {
-                dateNow.Append(tempArr[i]);
-                if (!tempArr[i].Equals(""))
-                {
-                    dateNow.Append(" ");
-                }
-            }
-            var year = DateTime.Now.GetDateTimeFormats()[132].Split(" ")[1];
-            dateNow.Append(year);
-            timeStamp = dateNow;
+
+            timeStamp = DateTime.Now.ToString("ddd MMM dd HH':'mm':'ss 'GMT' yyyy");
+
             
             // receive and parse the response
             answersParse(client, ep, hostname);
-                
         }
         
         /*
@@ -99,9 +80,9 @@ namespace ConsoleApplication
         {
             byte[] response = client.Receive(ref ep);
             timer.Stop();
-            queryTime.Append(timer.ElapsedMilliseconds.ToString());
-            Console.WriteLine(";; Got answer:");
+            queryTime = timer.ElapsedMilliseconds.ToString();
             
+            Console.WriteLine(";; Got answer:");
             var responseHex = BitConverter.ToString(response);
             var r = responseHex.Split("-");
             
@@ -646,6 +627,10 @@ namespace ConsoleApplication
             // Default values: DNS server- the one the OS is set to; Request type- A
             var p = new Program();
             List<IPAddress> dnsServers = p.GetLocalDnsAddresses();
+            foreach (var i in dnsServers)
+            {
+                Console.WriteLine(i);
+            }
             var numDnsServers = dnsServers.Count;
             string dnsServer = dnsServers[0].ToString();
             byte[] type = {0x00, 0x01};
@@ -728,6 +713,8 @@ namespace ConsoleApplication
                     {
                     }
                 }
+
+                Console.WriteLine();
                 input = Console.ReadLine();
             }
         }
