@@ -219,23 +219,21 @@ namespace ConsoleApplication
             typeNum.Append(r[currIdx + 1]);
             
             var type = new StringBuilder();
-            if (typeNum.ToString().Equals("0005"))
+            switch (typeNum.ToString())
             {
-                type.Append("CNAME");
+                case "0001":
+                    type.Append("A");
+                    break;
+                case "0005":
+                    type.Append("CNAME");
+                    break;
+                case "0006":
+                    type.Append("SOA");
+                    break;
+                case "001C":
+                    type.Append("AAAA");
+                    break;
             }
-            else if (typeNum.ToString().Equals("001C"))
-            {
-                type.Append("AAAA");
-            }
-            else if (typeNum.ToString().Equals("0001"))
-            {
-                type.Append("A");
-            }
-            else if (typeNum.ToString().Equals("0006"))
-            {
-                type.Append("SOA");
-            }
-
             return type;
         }
 
