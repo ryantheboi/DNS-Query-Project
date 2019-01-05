@@ -119,10 +119,8 @@ namespace ConsoleApplication
                 var name = helper.getNamePtr(r, currIdx);
                 names[i] = name;
                 currIdx += 2; // to move past the bytes for name pointer
-                var typeNum = new StringBuilder();
-                typeNum.Append(r[currIdx]);
-                typeNum.Append(r[currIdx + 1]);
-                var type = helper.getType(typeNum);
+                
+                var type = helper.getType(r, currIdx);
                 types[i] = type;
                 currIdx += 2; // to move past the bytes for type
                 

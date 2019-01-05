@@ -19,10 +19,10 @@ namespace ConsoleApplication
      *     The number of answers in the response
      *     The domain name
      *     The time to live
-     *     The transaction ID
      *     The query status
-     *     The query type
-     *     The query class
+     *     The transaction ID
+     *     The DNS record type
+     *     The class (usually IN for internet)
      *     The IPv4 or IPv6 address(es)
      */
     public class Helpers
@@ -181,16 +181,6 @@ namespace ConsoleApplication
         }
         
         /*
-         * Helper method to get the transaction ID from its 2 byte representation
-         */
-        private StringBuilder getID(StringBuilder transIDNum)
-        {
-            var transID = new StringBuilder();
-            transID.Append(Convert.ToInt32(transIDNum.ToString(), 16));
-            return transID;
-        }
-        
-        /*
          * Helper method to get the query status from its 2 byte representation
          */
         
@@ -209,10 +199,25 @@ namespace ConsoleApplication
         }
         
         /*
-         * Helper method to get the type from its 2 byte representation
+         * Helper method to get the transaction ID from its 2 byte representation
          */
-        internal StringBuilder getType(StringBuilder typeNum)
+        private StringBuilder getID(StringBuilder transIDNum)
         {
+            var transID = new StringBuilder();
+            transID.Append(Convert.ToInt32(transIDNum.ToString(), 16));
+            return transID;
+        }
+        
+        /*
+         * Helper method to get the type from its 2 byte representation, found in the string array packet.
+         * currIdx starts at the location where these 4 bytes are in the packet
+         */
+        internal StringBuilder getType(string[] r, int currIdx)
+        {
+            var typeNum = new StringBuilder();
+            typeNum.Append(r[currIdx]);
+            typeNum.Append(r[currIdx + 1]);
+            
             var type = new StringBuilder();
             if (typeNum.ToString().Equals("0005"))
             {
@@ -231,10 +236,15 @@ namespace ConsoleApplication
         }
 
         /*
-         * Helper method to get the class from its 2 byte representation
+         * Helper method to get the class from its 2 byte representation, found in the string array packet.
+         * currIdx starts at the location where these 4 bytes are in the packet
          */
-        internal StringBuilder getClass(StringBuilder classNum)
+        internal StringBuilder getClass(string[] r, int currIdx)
         {
+            var classNum = new StringBuilder();
+            classNum.Append(r[currIdx]);
+            classNum.Append(r[currIdx + 1]);
+            
             var c = new StringBuilder();
             if (classNum.ToString().Equals("0001"))
             {

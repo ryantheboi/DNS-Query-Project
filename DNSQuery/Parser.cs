@@ -41,10 +41,8 @@ namespace ConsoleApplication
         internal int typeAParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts, 
             StringBuilder[] addresses, int i, int currIdx)
         {
-            var classNum = new StringBuilder();
-            classNum.Append(r[currIdx]);
-            classNum.Append(r[currIdx + 1]);
-            var c = helper.getClass(classNum);
+            
+            var c = helper.getClass(r, currIdx);
             classes[i] = c;
             currIdx += 2; // to move past the bytes for class
             
@@ -70,10 +68,7 @@ namespace ConsoleApplication
         internal int typeCNAMEParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts, 
             StringBuilder[] addresses,int i, int currIdx)
         {
-            var classNum = new StringBuilder();
-            classNum.Append(r[currIdx]);
-            classNum.Append(r[currIdx + 1]);
-            var c = helper.getClass(classNum);
+            var c = helper.getClass(r, currIdx);
             classes[i] = c;
             currIdx += 2; // to move past the bytes for class
             
@@ -124,10 +119,7 @@ namespace ConsoleApplication
         internal int typeAAAAParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts, 
             StringBuilder[] addresses, int i, int currIdx)
         {
-            var classNum = new StringBuilder();
-            classNum.Append(r[currIdx]);
-            classNum.Append(r[currIdx + 1]);
-            var c = helper.getClass(classNum);
+            var c = helper.getClass(r, currIdx);
             classes[i] = c;
             currIdx += 2; // to move past the bytes for class
             
