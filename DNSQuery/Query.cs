@@ -124,18 +124,21 @@ namespace ConsoleApplication
                 types[i] = type;
                 currIdx += 2; // to move past the bytes for type
                 
-                // the following conditional statements are for parsing the addresses for the request type
-                if (type.ToString().Equals("A"))
+                // the following switch cases are for parsing the addresses for the request type
+                switch (type.ToString())
                 {
-                    currIdx = parser.typeAParse(r, classes, timeouts, addresses, i, currIdx);
-                }
-                else if (type.ToString().Equals("CNAME"))
-                {
-                    currIdx = parser.typeCNAMEParse(r, classes, timeouts, addresses, i, currIdx);
-                }
-                else if (type.ToString().Equals("AAAA"))
-                {
-                    currIdx = parser.typeAAAAParse(r, classes, timeouts, addresses, i, currIdx);
+                    case "A":
+                        currIdx = parser.typeAParse(r, classes, timeouts, addresses, i, currIdx);
+                        break;
+                    case "CNAME":
+                        currIdx = parser.typeCNAMEParse(r, classes, timeouts, addresses, i, currIdx);
+                        break;
+                    case "SOA":
+                        currIdx = parser.typeSOAParse(r, classes, timeouts, addresses, i, currIdx);
+                        break;
+                    case "AAAA":
+                        currIdx = parser.typeAAAAParse(r, classes, timeouts, addresses, i, currIdx);
+                        break;
                 }
             }
 
