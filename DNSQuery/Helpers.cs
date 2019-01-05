@@ -87,6 +87,30 @@ namespace ConsoleApplication
         }
         
         /*
+         * Helper method to get the number of authority resource records from the response
+         */
+        internal int getAuthorityRRs(string[] r)
+        {
+            var authorityRRsNum = new StringBuilder();
+            authorityRRsNum.Append(r[8]);
+            authorityRRsNum.Append(r[9]);
+            var authorityRRs = Convert.ToInt32(authorityRRsNum.ToString(), 16);
+            return authorityRRs;
+        }
+        
+        /*
+         * Helper method to get the number of authority resource records from the response
+         */
+        internal int getAdditionalRRs(string[] r)
+        {
+            var additionalRRsNum = new StringBuilder();
+            additionalRRsNum.Append(r[10]);
+            additionalRRsNum.Append(r[11]);
+            var additionalRRs = Convert.ToInt32(additionalRRsNum.ToString(), 16);
+            return additionalRRs;
+        }
+        
+        /*
          * Recursive helper method to get the name from a pointer in the string array packet
          * If a name contains more than one pointer, the pointer is followed recursively
          */

@@ -97,20 +97,25 @@ namespace ConsoleApplication
             helper.printHeader(r);
             
 
-            // get the number of answers in the response
+            // get the number of answer, authority, and additional resource records in response
             var answers = helper.getAnswers(r);
+            var authorityRRs = helper.getAuthorityRRs(r);
+            var additionalRRs = helper.getAdditionalRRs(r);
             
             // to move past the queries section
             var answersOffset = 12; 
             var hostnameOffset = hostname.Length + 2;
             var typeClassOffset = 4;
 
-            // to get to the start of the answers section
-            var names = new StringBuilder[answers];
-            var types = new StringBuilder[answers];
-            var classes = new StringBuilder[answers];
-            var timeouts = new StringBuilder[answers];
-            var addresses = new StringBuilder[answers];
+            // initialize the list f names, types, classes, TTLs, and addresses for every answer
+            var resourceRecords = answers + authorityRRs + additionalRRs;
+            var names = new StringBuilder[resourceRecords];
+            var types = new StringBuilder[resourceRecords];
+            var classes = new StringBuilder[resourceRecords];
+            var timeouts = new StringBuilder[resourceRecords];
+            var addresses = new StringBuilder[resourceRecords];
+            
+            // to skip the questions section and get to the start of the answers section
             var currIdx = answersOffset + hostnameOffset + typeClassOffset;
             
             // this loop grabs the next types, classes, and addresses in the response answers
@@ -148,6 +153,34 @@ namespace ConsoleApplication
                 Console.WriteLine();
                 Console.WriteLine(";; ANSWER SECTION:");
                 for (int i = 0; i < answers; i++)
+                {
+                    var result = new StringBuilder();
+                    result.AppendFormat( "{0, -24} {1, -8} {2, -8} {3, -8} {4}", 
+                        names[i], timeouts[i], classes[i], types[i], addresses[i]);
+                    
+                    Console.WriteLine(result);
+                }
+            }
+
+            if (authorityRRs > 0)
+            {
+                Console.WriteLine();
+                Console.WriteLine(";; AUTHORITY SECTION:");
+                for (int i = 0; i < authorityRRs; i++)
+                {
+                    var result = new StringBuilder();
+                    result.AppendFormat( "{0, -24} {1, -8} {2, -8} {3, -8} {4}", 
+                        names[i], timeouts[i], classes[i], types[i], addresses[i]);
+                    
+                    Console.WriteLine(result);
+                }
+            }
+            
+            if (additionalRRs > 0)
+            {
+                Console.WriteLine();
+                Console.WriteLine(";; ADDITIONAL SECTION:");
+                for (int i = 0; i < additionalRRs; i++)
                 {
                     var result = new StringBuilder();
                     result.AppendFormat( "{0, -24} {1, -8} {2, -8} {3, -8} {4}", 
