@@ -10,6 +10,14 @@ using System.Text;
 
 namespace ConsoleApplication
 {
+    /*
+     * @author - Ryan Chung
+     * This class contains methods to parse the different DNS record type responses that may be received
+     * Currently, the following DNS record types in a response can be parsed:
+     *     A - IPv4 records
+     *     AAAA - IPv6 records
+     *     CNAME - Canonical name (alias) records
+     */
     public class Parser
     {
         private Helpers helper;

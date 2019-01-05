@@ -10,6 +10,12 @@ using System.Text;
 
 namespace ConsoleApplication
 {
+    /*
+     * @ author - Ryan Chung
+     * This class is responsible for the entire DNS query
+     * A request is first sent out to a DNS server asking for a hostname
+     * If a response is received, then it gets parsed here
+     */
     public class Query
     {
         private Helpers helper;
@@ -23,6 +29,7 @@ namespace ConsoleApplication
         {
             this.helper = new Helpers();
             this.parser = new Parser();
+            this.timer = new Stopwatch();
         }
         
         /*
@@ -31,7 +38,6 @@ namespace ConsoleApplication
          */
         public void SendRequest(string dnsServer, byte[] type, string hostname)
         {
-            this.timer = new Stopwatch();
             timer.Start();
             
             var client = new UdpClient();
@@ -151,13 +157,17 @@ namespace ConsoleApplication
             }
         }
         
-        /* Returns the time that it took to send the request and receive a response */
+        /*
+         * Returns the time that it took to send the request and receive a response
+         */
         public String getQueryTime()
         {
             return this.queryTime;
         }
         
-        /* Returns the date and time that the query was made */
+        /*
+         * Returns the date and time that the query was made
+         */
         public String getTimeStamp()
         {
             return this.timeStamp;

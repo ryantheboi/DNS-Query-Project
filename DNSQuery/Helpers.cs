@@ -10,6 +10,21 @@ using System.Text;
 
 namespace ConsoleApplication
 {
+    
+    /*
+     * @author - Ryan Chung
+     * This class contains methods to extract and translate the information from a network packet
+     * The class can extract the following from a packet:
+     *     The 12 byte packet header
+     *     The number of answers in the response
+     *     The domain name
+     *     The time to live
+     *     The transaction ID
+     *     The query status
+     *     The query type
+     *     The query class
+     *     The IPv4 or IPv6 address(es)
+     */
     public class Helpers
     {
         /*
@@ -111,7 +126,7 @@ namespace ConsoleApplication
         
         /*
          * Helper method to get the name from a pointer in the string array packet, currIdx starts at the name size
-         * If a name contains more than one pointer, the pointer is followed recursively
+         * If a name contains more than one pointer, the pointer is followed iteratively
          */
         internal StringBuilder getName(string[] r, int currIdx)
         {
@@ -234,29 +249,6 @@ namespace ConsoleApplication
         }
         
         /*
-         * Helper method to get all the local DNS server addresses
-         */
-        internal List<IPAddress> GetLocalDnsAddresses()
-        {
-            var dnsAddresses = new List<IPAddress>();
-   
-            NetworkInterface[] adapters  = NetworkInterface.GetAllNetworkInterfaces();
-            foreach (NetworkInterface adapter in adapters)
-            {
-                IPInterfaceProperties adapterProperties = adapter.GetIPProperties();
-                IPAddressCollection dnsServers = adapterProperties.DnsAddresses;
-                if (dnsServers.Count > 0)
-                {
-                    foreach (IPAddress dns in dnsServers)
-                    {
-                        dnsAddresses.Add(dns.MapToIPv4());
-                    }
-                }
-            }
-            return dnsAddresses;
-        }
-        
-        /*
          * Helper method to get the IPv4 address from where it begins in the packet array
          * IPv4 addresses are 32 bits, so they are 4 bytes long
          * The address is represented as 4 groups, each of decimal representations of 2 hex digits
@@ -372,6 +364,29 @@ namespace ConsoleApplication
             
             address = form3;
             return address;
+        }
+        
+        /*
+         * Helper method to get all the local DNS server addresses
+         */
+        internal List<IPAddress> GetLocalDnsAddresses()
+        {
+            var dnsAddresses = new List<IPAddress>();
+   
+            NetworkInterface[] adapters  = NetworkInterface.GetAllNetworkInterfaces();
+            foreach (NetworkInterface adapter in adapters)
+            {
+                IPInterfaceProperties adapterProperties = adapter.GetIPProperties();
+                IPAddressCollection dnsServers = adapterProperties.DnsAddresses;
+                if (dnsServers.Count > 0)
+                {
+                    foreach (IPAddress dns in dnsServers)
+                    {
+                        dnsAddresses.Add(dns.MapToIPv4());
+                    }
+                }
+            }
+            return dnsAddresses;
         }
     }
 }

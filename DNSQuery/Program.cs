@@ -10,7 +10,7 @@ using System.Text;
 
 /*
  * @author - Ryan Chung
- * This program sends DNS queries and parses the response back
+ * This program sends DNS query requests and parses the response back
  * Currently is capable of sending A and AAAA requests
  * Currently is capable of parsing A, AAAA, and CNAME type responses
  */
@@ -22,7 +22,6 @@ namespace ConsoleApplication
         {
             // Default values: DNS server- the one the OS is set to; Request type- A
             var helper = new Helpers();
-            var query = new Query();
             List<IPAddress> dnsServers = helper.GetLocalDnsAddresses();
             foreach (var i in dnsServers)
             {
@@ -36,6 +35,8 @@ namespace ConsoleApplication
             var input = Console.ReadLine();
             while (!input.Equals("exit"))
             {
+                var query = new Query();
+
                 byte[] type = {0x00, 0x01};
                 var hostname = "";
                 
