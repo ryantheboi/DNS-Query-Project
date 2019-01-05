@@ -231,6 +231,10 @@ namespace ConsoleApplication
             {
                 type.Append("A");
             }
+            else if (typeNum.ToString().Equals("0006"))
+            {
+                type.Append("SOA");
+            }
 
             return type;
         }
