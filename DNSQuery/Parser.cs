@@ -76,7 +76,7 @@ namespace ConsoleApplication
             currIdx += 6; // to move past the bytes for time to live and data length
             var address = new StringBuilder();
             
-            // if  CNAME starts as a pointer, use recursive getName function
+            // if CNAME starts as a pointer, use recursive getName function
             // else, CNAME starts with its hex size, use iterative getName function
             if (r[currIdx].Equals("C0")) 
             {
@@ -159,7 +159,7 @@ namespace ConsoleApplication
             timeouts[i] = helper.getTimeout(r, currIdx);
             currIdx += 6; // to move past the bytes for time to live and data length
 
-            // if  SOA starts as a pointer, use recursive getName function
+            // if SOA starts as a pointer, use recursive getName function
             // else, SOA starts with its hex size, use iterative getName function
             var address = new StringBuilder();
             if (r[currIdx].Equals("C0")) 
@@ -179,7 +179,7 @@ namespace ConsoleApplication
                 currIdx += 2;
             }
 
-            // if  SOA starts as a pointer, use recursive getName function
+            // if SOA starts as a pointer, use recursive getName function
             // else, SOA starts with its hex size, use iterative getName function
             var mailbox = new StringBuilder();
             if (r[currIdx].Equals("C0")) 
@@ -198,7 +198,6 @@ namespace ConsoleApplication
             {
                 currIdx += 2;
             }
-            Console.WriteLine(currIdx);
 
             // the following lines grabs the relevant SOA information 4 bytes at a time
             serialNums[i] = helper.getDecimal(r, currIdx, 4);

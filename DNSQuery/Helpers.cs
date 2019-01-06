@@ -202,6 +202,15 @@ namespace ConsoleApplication
             var hasPointer = 0;
             var idx = currIdx;
             
+            // check if the name starts with a pointer
+            if (r[idx].Equals("C0"))
+            {
+                hasPointer = 1;
+                sizeBlock[0] = totalSize;
+                sizeBlock[1] = hasPointer;
+                return sizeBlock;
+            }
+            
             // get name size, append to running total, move past that byte
             var nameSize = Convert.ToInt32(r[idx], 16);
             totalSize += nameSize;

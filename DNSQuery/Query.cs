@@ -131,11 +131,26 @@ namespace ConsoleApplication
             * if the record type is SOA, the primary name server, responsible authority's mailbox, serial number,
             * refresh interval, retry interval, expire limit, and minimum TTL are also grabbed.
             */
-            for (int i = 0; i < resourceRecords; i++)
+            for (var i = 0; i < resourceRecords; i++)
             {
-                var name = helper.getNamePtr(r, currIdx);
+                // if name starts as a pointer, use recursive getName function
+                // else, name starts with its hex size, use iterative getName function
+                var name = new StringBuilder();
+                if (r[currIdx].Equals("C0")) 
+                {
+                    name = helper.getNamePtr(r, currIdx);
+                }
+                else
+                {
+                    name = helper.getName(r, currIdx);
+                }
                 names[i] = name;
-                currIdx += 2; // to move past the bytes for name pointer
+                var nameBlock = helper.getNameSize(r, currIdx);
+                currIdx += nameBlock[0];
+                if (nameBlock[1] == 1) // there is a pointer in the name, skip the 2 bytes
+                {
+                    currIdx += 2;
+                }
                 
                 var type = helper.getType(r, currIdx);
                 types[i] = type;
@@ -167,7 +182,7 @@ namespace ConsoleApplication
             {
                 Console.WriteLine();
                 Console.WriteLine(";; ANSWER SECTION:");
-                for (int i = 0; i < answers; i++)
+                for (var i = 0; i < answers; i++)
                 {
                     var result = new StringBuilder();
                     result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4}",
@@ -189,7 +204,7 @@ namespace ConsoleApplication
             {
                 Console.WriteLine();
                 Console.WriteLine(";; AUTHORITY SECTION:");
-                for (int i = 0; i < authorityRRs; i++)
+                for (var i = 0; i < authorityRRs; i++)
                 {
                     var result = new StringBuilder();
                     result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4}",
@@ -210,7 +225,7 @@ namespace ConsoleApplication
             {
                 Console.WriteLine();
                 Console.WriteLine(";; ADDITIONAL SECTION:");
-                for (int i = 0; i < additionalRRs; i++)
+                for (var i = 0; i < additionalRRs; i++)
                 {
                     var result = new StringBuilder();
                     result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4}",
