@@ -188,7 +188,8 @@ namespace ConsoleApplication
         }
         
         /*
-         * Helper method to count the name length in the string array packet, currIdx starts at the name size
+         * Helper method to count the number of bytes that a name occupies in the string array packet,
+         * currIdx starts at the name size
          * Counting stops if a null terminator or a pointer is encountered
          * @return sizeBlock - an array of ints to store the following info about a name:
          *         sizeBlock[0] - the size of the name up until a pointer, if one exists
@@ -204,12 +205,14 @@ namespace ConsoleApplication
             // get name size, append to running total, move past that byte
             var nameSize = Convert.ToInt32(r[idx], 16);
             totalSize += nameSize;
+            totalSize++;
             idx++;
             while (nameSize != 0 && nameSize != 192)
             {
                 idx += nameSize;
                 nameSize = Convert.ToInt32(r[idx], 16);
                 totalSize += nameSize;
+                totalSize++;
                 idx++;
                 if (nameSize == 192)
                 {
