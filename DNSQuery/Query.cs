@@ -162,6 +162,7 @@ namespace ConsoleApplication
             }
 
             // final printout for answers section, if there are answers
+            var RR = 0;
             if (answers > 0)
             {
                 Console.WriteLine();
@@ -169,13 +170,17 @@ namespace ConsoleApplication
                 for (int i = 0; i < answers; i++)
                 {
                     var result = new StringBuilder();
-                    result.AppendFormat( "{0, -24} {1, -8} {2, -8} {3, -8} {4}", 
-                        names[i], timeouts[i], classes[i], types[i], addresses[i]);
-                    
+                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8}, {5, -8}, {6, -8}, {7, -8}," +
+                                        "{8, -8}, {9, -8}, {10, -8}",
+                                        names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR],
+                                        mailbox[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
+                                        expireLimits[RR], minTTLs[RR]);
                     Console.WriteLine(result);
+                    RR++;
                 }
             }
 
+            // final printout for authority section, if there are any authority resource records
             if (authorityRRs > 0)
             {
                 Console.WriteLine();
@@ -183,13 +188,17 @@ namespace ConsoleApplication
                 for (int i = 0; i < authorityRRs; i++)
                 {
                     var result = new StringBuilder();
-                    result.AppendFormat( "{0, -24} {1, -8} {2, -8} {3, -8} {4}", 
-                        names[i], timeouts[i], classes[i], types[i], addresses[i]);
-                    
+                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8}, {5, -8}, {6, -8}, {7, -8}," +
+                                        "{8, -8}, {9, -8}, {10, -8}",
+                                        names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR],
+                                        mailbox[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
+                                        expireLimits[RR], minTTLs[RR]);
                     Console.WriteLine(result);
+                    RR++;
                 }
             }
             
+            // final printout for additional section, if there are any additional resource records
             if (additionalRRs > 0)
             {
                 Console.WriteLine();
@@ -197,10 +206,13 @@ namespace ConsoleApplication
                 for (int i = 0; i < additionalRRs; i++)
                 {
                     var result = new StringBuilder();
-                    result.AppendFormat( "{0, -24} {1, -8} {2, -8} {3, -8} {4}", 
-                        names[i], timeouts[i], classes[i], types[i], addresses[i]);
-                    
+                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8}, {5, -8}, {6, -8}, {7, -8}," +
+                                        "{8, -8}, {9, -8}, {10, -8}",
+                                        names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR],
+                                        mailbox[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
+                                        expireLimits[RR], minTTLs[RR]);
                     Console.WriteLine(result);
+                    RR++;
                 }
             }
         }
