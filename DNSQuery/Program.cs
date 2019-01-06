@@ -41,27 +41,39 @@ namespace ConsoleApplication
                 {
                     case 3:
                         dnsServer = args[0];
-                        if (args[1].Equals("AAAA"))
+                        switch (args[1])
                         {
-                            type[1] = 0x1c;
+                            case "SOA":
+                                type[1] = 0x06;
+                                break;
+                            case "PTR":
+                                type[1] = 0x0c;
+                                break;
+                            case "AAAA":
+                                type[1] = 0x1c;
+                                break;
+                            default:
+                                type[1] = 0x01;
+                                break;
                         }
-                        else if (args[1].Equals("SOA"))
-                        {
-                            type[1] = 0x06;
-                        }
-
                         hostname = args[2];
                         break;
                     case 2:
-                        if (args[0].Equals("AAAA"))
+                        switch (args[0])
                         {
-                            type[1] = 0x1c;
+                            case "SOA":
+                                type[1] = 0x06;
+                                break;
+                            case "PTR":
+                                type[1] = 0x0c;
+                                break;
+                            case "AAAA":
+                                type[1] = 0x1c;
+                                break;
+                            default:
+                                type[1] = 0x01;
+                                break;
                         }
-                        else if (args[0].Equals("SOA"))
-                        {
-                            type[1] = 0x06;
-                        }
-
                         hostname = args[1];
                         break;
                     case 1:
@@ -103,7 +115,6 @@ namespace ConsoleApplication
 
                 else
                 {
-
                     try
                     {
                         query.SendRequest(dnsServer, type, hostname);

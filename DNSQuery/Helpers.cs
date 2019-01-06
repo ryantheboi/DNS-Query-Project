@@ -303,6 +303,9 @@ namespace ConsoleApplication
                 case "0006":
                     type.Append("SOA");
                     break;
+                case "000C":
+                    type.Append("PTR");
+                    break;
                 case "001C":
                     type.Append("AAAA");
                     break;
