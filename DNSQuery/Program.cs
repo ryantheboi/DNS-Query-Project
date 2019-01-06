@@ -23,10 +23,6 @@ namespace ConsoleApplication
             // Default values: DNS server- the one the OS is set to; Request type- A
             var helper = new Helpers();
             List<IPAddress> dnsServers = helper.GetLocalDnsAddresses();
-            foreach (var i in dnsServers)
-            {
-                Console.WriteLine(i);
-            }
             var numDnsServers = dnsServers.Count;
             string dnsServer = dnsServers[0].ToString();
             

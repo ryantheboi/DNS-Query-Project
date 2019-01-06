@@ -189,7 +189,7 @@ namespace ConsoleApplication
         
         /*
          * Helper method to count the number of bytes that a name occupies in the string array packet,
-         * currIdx starts at the name size
+         * inherently includes the null terminator in counting, currIdx starts at the name size
          * Counting stops if a null terminator or a pointer is encountered
          * @return sizeBlock - an array of ints to store the following info about a name:
          *         sizeBlock[0] - the size of the name up until a pointer, if one exists
@@ -211,13 +211,14 @@ namespace ConsoleApplication
             {
                 idx += nameSize;
                 nameSize = Convert.ToInt32(r[idx], 16);
-                totalSize += nameSize;
-                totalSize++;
-                idx++;
                 if (nameSize == 192)
                 {
                     hasPointer = 1;
+                    break;
                 }
+                totalSize += nameSize;
+                totalSize++; // if nameSize is 1, increment by 1 for the null terminator
+                idx++;
             }
             sizeBlock[0] = totalSize;
             sizeBlock[1] = hasPointer;
@@ -319,6 +320,29 @@ namespace ConsoleApplication
             }
 
             return c;
+        }
+        
+        /*
+         * Helper method to get the decimal representation of a variable number of consecutive bytes in
+         * a network packet.
+         * @param r - the string array representation of a network packet
+         * @param currIdx - index that starts at the location of interest.
+         * @param numBytes - the number of bytes to look at past currIdx in r
+         * @return - the decimal representation of the bytes of interest
+         */
+        internal StringBuilder getDecimal(string[] r, int currIdx, int numBytes)
+        {
+            var hexNum = new StringBuilder();
+            var idx = currIdx;
+            for (var i = 0; i < numBytes; i++)
+            {
+                hexNum.Append(r[idx]);
+                idx++;
+            }
+
+            var dec = new StringBuilder();
+            dec.Append(Convert.ToInt32(hexNum.ToString(), 16));
+            return dec;
         }
         
         /*

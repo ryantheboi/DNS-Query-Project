@@ -116,7 +116,7 @@ namespace ConsoleApplication
             var addresses = new StringBuilder[resourceRecords];
             
             // initialize the lists for SOA type record
-            var mailbox = new StringBuilder[resourceRecords];
+            var mailboxes = new StringBuilder[resourceRecords];
             var serialNums = new StringBuilder[resourceRecords];
             var refreshIntrvls = new StringBuilder[resourceRecords];
             var retryIntrvls = new StringBuilder[resourceRecords];
@@ -152,7 +152,7 @@ namespace ConsoleApplication
                         break;
                     case "SOA":
                         currIdx = parser.typeSOAParse(r, classes, timeouts, addresses,
-                                                      mailbox, serialNums, refreshIntrvls, retryIntrvls,
+                                                      mailboxes, serialNums, refreshIntrvls, retryIntrvls,
                                                       expireLimits, minTTLs, i, currIdx);
                         break;
                     case "AAAA":
@@ -170,13 +170,13 @@ namespace ConsoleApplication
                 for (int i = 0; i < answers; i++)
                 {
                     var result = new StringBuilder();
-                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8}",
+                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4}",
                                         names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR]);
                     // if the record type is SOA, print these out, as well
                     if (types[RR].Equals("SOA"))
                     {
-                        result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8} {5, -8}",
-                                            mailbox[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
+                        result.AppendFormat("{0, -1} {1, -2} {2, -2} {3, -2} {4, -2} {5, -2} {6}", "",
+                                            mailboxes[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
                                             expireLimits[RR], minTTLs[RR]);
                     }
                     Console.WriteLine(result);
@@ -192,12 +192,12 @@ namespace ConsoleApplication
                 for (int i = 0; i < authorityRRs; i++)
                 {
                     var result = new StringBuilder();
-                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8}",
+                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4}",
                                         names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR]);
                     if (types[RR].Equals("SOA"))
                     {
-                        result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8} {5, -8}",
-                                            mailbox[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
+                        result.AppendFormat("{0, -1} {1, -2} {2, -2} {3, -2} {4, -2} {5, -2} {6}", "",
+                                            mailboxes[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
                                             expireLimits[RR], minTTLs[RR]);
                     }
                     Console.WriteLine(result);
@@ -213,12 +213,12 @@ namespace ConsoleApplication
                 for (int i = 0; i < additionalRRs; i++)
                 {
                     var result = new StringBuilder();
-                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8}",
+                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4}",
                                         names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR]);
                     if (types[RR].Equals("SOA"))
                     {
-                        result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8} {5, -8}",
-                                            mailbox[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
+                        result.AppendFormat("{0, -1} {1, -2} {2, -2} {3, -2} {4, -2} {5, -2} {6}", "",
+                                            mailboxes[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
                                             expireLimits[RR], minTTLs[RR]);
                     }
                     Console.WriteLine(result);
