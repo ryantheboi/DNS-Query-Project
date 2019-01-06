@@ -23,10 +23,6 @@ namespace ConsoleApplication
             // Default values: DNS server- the one the OS is set to; Request type- A
             var helper = new Helpers();
             List<IPAddress> dnsServers = helper.GetLocalDnsAddresses();
-            foreach (var i in dnsServers)
-            {
-                Console.WriteLine(i);
-            }
             var numDnsServers = dnsServers.Count;
             string dnsServer = dnsServers[0].ToString();
             
@@ -41,28 +37,36 @@ namespace ConsoleApplication
                 var hostname = "";
                 
                 var args = input.Split(" ");
-                if (args.Length == 3)
+                switch (args.Length)
                 {
-                    dnsServer = args[0];
-                    if (args[1].Equals("AAAA"))
-                    {
-                        type[1] = 0x1c;
-                    }
+                    case 3:
+                        dnsServer = args[0];
+                        if (args[1].Equals("AAAA"))
+                        {
+                            type[1] = 0x1c;
+                        }
+                        else if (args[1].Equals("SOA"))
+                        {
+                            type[1] = 0x06;
+                        }
 
-                    hostname = args[2];
-                }
-                else if (args.Length == 2)
-                {
-                    if (args[0].Equals("AAAA"))
-                    {
-                        type[1] = 0x1c;
-                    }
+                        hostname = args[2];
+                        break;
+                    case 2:
+                        if (args[0].Equals("AAAA"))
+                        {
+                            type[1] = 0x1c;
+                        }
+                        else if (args[0].Equals("SOA"))
+                        {
+                            type[1] = 0x06;
+                        }
 
-                    hostname = args[1];
-                }
-                else if (args.Length == 1)
-                {
-                    hostname = args[0];
+                        hostname = args[1];
+                        break;
+                    case 1:
+                        hostname = args[0];
+                        break;
                 }
 
                 // try to make the DNS query and return the time it took & time it occurred

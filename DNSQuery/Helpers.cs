@@ -87,6 +87,30 @@ namespace ConsoleApplication
         }
         
         /*
+         * Helper method to get the number of authority resource records from the response
+         */
+        internal int getAuthorityRRs(string[] r)
+        {
+            var authorityRRsNum = new StringBuilder();
+            authorityRRsNum.Append(r[8]);
+            authorityRRsNum.Append(r[9]);
+            var authorityRRs = Convert.ToInt32(authorityRRsNum.ToString(), 16);
+            return authorityRRs;
+        }
+        
+        /*
+         * Helper method to get the number of authority resource records from the response
+         */
+        internal int getAdditionalRRs(string[] r)
+        {
+            var additionalRRsNum = new StringBuilder();
+            additionalRRsNum.Append(r[10]);
+            additionalRRsNum.Append(r[11]);
+            var additionalRRs = Convert.ToInt32(additionalRRsNum.ToString(), 16);
+            return additionalRRs;
+        }
+        
+        /*
          * Recursive helper method to get the name from a pointer in the string array packet
          * If a name contains more than one pointer, the pointer is followed recursively
          */
@@ -164,6 +188,53 @@ namespace ConsoleApplication
         }
         
         /*
+         * Helper method to count the number of bytes that a name occupies in the string array packet,
+         * inherently includes the null terminator in counting, currIdx starts at the name size
+         * Counting stops if a null terminator or a pointer is encountered
+         * @return sizeBlock - an array of ints to store the following info about a name:
+         *         sizeBlock[0] - the size of the name up until a pointer, if one exists
+         *         sizeBlock[1] - 0 by default if there is no pointer in the name, 1 if there is
+         */
+        internal int[] getNameSize(string[] r, int currIdx)
+        {
+            var sizeBlock = new int[2];
+            var totalSize = 0;
+            var hasPointer = 0;
+            var idx = currIdx;
+            
+            // check if the name starts with a pointer
+            if (r[idx].Equals("C0"))
+            {
+                hasPointer = 1;
+                sizeBlock[0] = totalSize;
+                sizeBlock[1] = hasPointer;
+                return sizeBlock;
+            }
+            
+            // get name size, append to running total, move past that byte
+            var nameSize = Convert.ToInt32(r[idx], 16);
+            totalSize += nameSize;
+            totalSize++;
+            idx++;
+            while (nameSize != 0 && nameSize != 192)
+            {
+                idx += nameSize;
+                nameSize = Convert.ToInt32(r[idx], 16);
+                if (nameSize == 192)
+                {
+                    hasPointer = 1;
+                    break;
+                }
+                totalSize += nameSize;
+                totalSize++; // if nameSize is 1, increment by 1 for the null terminator
+                idx++;
+            }
+            sizeBlock[0] = totalSize;
+            sizeBlock[1] = hasPointer;
+            return sizeBlock;
+        }
+        
+        /*
          * Helper method to get the timeout to request from the authoritative server, found in the string array packet.
          * currIdx starts at the location where these 4 bytes are in the packet
          */
@@ -219,19 +290,21 @@ namespace ConsoleApplication
             typeNum.Append(r[currIdx + 1]);
             
             var type = new StringBuilder();
-            if (typeNum.ToString().Equals("0005"))
+            switch (typeNum.ToString())
             {
-                type.Append("CNAME");
+                case "0001":
+                    type.Append("A");
+                    break;
+                case "0005":
+                    type.Append("CNAME");
+                    break;
+                case "0006":
+                    type.Append("SOA");
+                    break;
+                case "001C":
+                    type.Append("AAAA");
+                    break;
             }
-            else if (typeNum.ToString().Equals("001C"))
-            {
-                type.Append("AAAA");
-            }
-            else if (typeNum.ToString().Equals("0001"))
-            {
-                type.Append("A");
-            }
-
             return type;
         }
 
@@ -256,6 +329,29 @@ namespace ConsoleApplication
             }
 
             return c;
+        }
+        
+        /*
+         * Helper method to get the decimal representation of a variable number of consecutive bytes in
+         * a network packet.
+         * @param r - the string array representation of a network packet
+         * @param currIdx - index that starts at the location of interest.
+         * @param numBytes - the number of bytes to look at past currIdx in r
+         * @return - the decimal representation of the bytes of interest
+         */
+        internal StringBuilder getDecimal(string[] r, int currIdx, int numBytes)
+        {
+            var hexNum = new StringBuilder();
+            var idx = currIdx;
+            for (var i = 0; i < numBytes; i++)
+            {
+                hexNum.Append(r[idx]);
+                idx++;
+            }
+
+            var dec = new StringBuilder();
+            dec.Append(Convert.ToInt32(hexNum.ToString(), 16));
+            return dec;
         }
         
         /*
