@@ -24,6 +24,8 @@ namespace ConsoleApplication
      *     The DNS record type
      *     The class (usually IN for internet)
      *     The IPv4 or IPv6 address(es)
+     *     The number of bytes that a name occupies in a packet
+
      */
     public class Helpers
     {

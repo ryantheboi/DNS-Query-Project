@@ -15,8 +15,9 @@ namespace ConsoleApplication
      * This class contains methods to parse the different DNS record type responses that may be received
      * Currently, the following DNS record types in a response can be parsed:
      *     A - IPv4 records
-     *     AAAA - IPv6 records
      *     CNAME - Canonical name (alias) records
+     *     SOA - Start of Authority records
+     *     AAAA - IPv6 records
      */
     public class Parser
     {
