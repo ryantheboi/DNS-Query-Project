@@ -170,11 +170,15 @@ namespace ConsoleApplication
                 for (int i = 0; i < answers; i++)
                 {
                     var result = new StringBuilder();
-                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8}, {5, -8}, {6, -8}, {7, -8}," +
-                                        "{8, -8}, {9, -8}, {10, -8}",
-                                        names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR],
-                                        mailbox[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
-                                        expireLimits[RR], minTTLs[RR]);
+                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8}",
+                                        names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR]);
+                    // if the record type is SOA, print these out, as well
+                    if (types[RR].Equals("SOA"))
+                    {
+                        result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8} {5, -8}",
+                                            mailbox[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
+                                            expireLimits[RR], minTTLs[RR]);
+                    }
                     Console.WriteLine(result);
                     RR++;
                 }
@@ -188,11 +192,14 @@ namespace ConsoleApplication
                 for (int i = 0; i < authorityRRs; i++)
                 {
                     var result = new StringBuilder();
-                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8}, {5, -8}, {6, -8}, {7, -8}," +
-                                        "{8, -8}, {9, -8}, {10, -8}",
-                                        names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR],
-                                        mailbox[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
-                                        expireLimits[RR], minTTLs[RR]);
+                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8}",
+                                        names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR]);
+                    if (types[RR].Equals("SOA"))
+                    {
+                        result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8} {5, -8}",
+                                            mailbox[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
+                                            expireLimits[RR], minTTLs[RR]);
+                    }
                     Console.WriteLine(result);
                     RR++;
                 }
@@ -206,11 +213,14 @@ namespace ConsoleApplication
                 for (int i = 0; i < additionalRRs; i++)
                 {
                     var result = new StringBuilder();
-                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8}, {5, -8}, {6, -8}, {7, -8}," +
-                                        "{8, -8}, {9, -8}, {10, -8}",
-                                        names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR],
-                                        mailbox[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
-                                        expireLimits[RR], minTTLs[RR]);
+                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8}",
+                                        names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR]);
+                    if (types[RR].Equals("SOA"))
+                    {
+                        result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4, -8} {5, -8}",
+                                            mailbox[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
+                                            expireLimits[RR], minTTLs[RR]);
+                    }
                     Console.WriteLine(result);
                     RR++;
                 }
