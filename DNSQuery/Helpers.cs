@@ -188,6 +188,40 @@ namespace ConsoleApplication
         }
         
         /*
+         * Helper method to count the name length in the string array packet, currIdx starts at the name size
+         * Counting stops if a null terminator or a pointer is encountered
+         * @return sizeBlock - an array of ints to store the following info about a name:
+         *         sizeBlock[0] - the size of the name up until a pointer, if one exists
+         *         sizeBlock[1] - 0 by default if there is no pointer in the name, 1 if there is
+         */
+        internal int[] getNameSize(string[] r, int currIdx)
+        {
+            var sizeBlock = new int[2];
+            var totalSize = 0;
+            var hasPointer = 0;
+            var idx = currIdx;
+            
+            // get name size, append to running total, move past that byte
+            var nameSize = Convert.ToInt32(r[idx], 16);
+            totalSize += nameSize;
+            idx++;
+            while (nameSize != 0 && nameSize != 192)
+            {
+                idx += nameSize;
+                nameSize = Convert.ToInt32(r[idx], 16);
+                totalSize += nameSize;
+                idx++;
+                if (nameSize == 192)
+                {
+                    hasPointer = 1;
+                }
+            }
+            sizeBlock[0] = totalSize;
+            sizeBlock[1] = hasPointer;
+            return sizeBlock;
+        }
+        
+        /*
          * Helper method to get the timeout to request from the authoritative server, found in the string array packet.
          * currIdx starts at the location where these 4 bytes are in the packet
          */
