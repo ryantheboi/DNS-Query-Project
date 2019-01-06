@@ -31,10 +31,10 @@ namespace ConsoleApplication
         /*
          * Helper method for parsing an A type response and the timeout
          * @param r - the string array representation of the response packet
-         * @param classes - the array to append the class to
-         * @param addresses - the array to append the address to
-         * @param timeouts - the array to append the timeout to request from authoritative server to
-         * @param i - the ith answer that is being parsed
+         * @param classes - the array to store the class
+         * @param addresses - the array to store the address
+         * @param timeouts - the array to store the timeout to request from authoritative server
+         * @param i - the ith resource record that is being parsed
          * @param currIdx - the current ptr location in the packet, r
          * @return - where the ptr was left off in the packet, r
          */
@@ -58,10 +58,10 @@ namespace ConsoleApplication
         /*
          * Helper method for parsing a CNAME type response
          * @param r - the string array representation of the response packet
-         * @param classes - the array to append the class to
-         * @param addresses - the array to append the address to
-         * @param timeouts - the array to append the timeout to request from authoritative server to
-         * @param i - the ith answer that is being parsed
+         * @param classes - the array to store the class
+         * @param addresses - the array to store the canonical (alias) name
+         * @param timeouts - the array to store the timeout to request from authoritative server
+         * @param i - the ith resource record that is being parsed
          * @param currIdx - the current ptr location in the packet, r
          * @return - where the ptr was left off in the packet, r
          */
@@ -109,10 +109,10 @@ namespace ConsoleApplication
         /*
          * Helper method for parsing an AAAA type response
          * @param r - the string array representation of the response packet
-         * @param classes - the array to append the class to
-         * @param addresses - the array to append the address to
-         * @param timeouts - the array to append the timeout to request from authoritative server to
-         * @param i - the ith answer that is being parsed
+         * @param classes - the array to store the class
+         * @param addresses - the array to store the address
+         * @param timeouts - the array to store the timeout to request from authoritative server
+         * @param i - the ith resource record that is being parsed
          * @param currIdx - the current ptr location in the packet, r
          * @return - where the ptr was left off in the packet, r
          */
@@ -135,15 +135,23 @@ namespace ConsoleApplication
         /*
          * Helper method for parsing an SOA type response
          * @param r - the string array representation of the response packet
-         * @param classes - the array to append the class to
-         * @param addresses - the array to append the address to
-         * @param timeouts - the array to append the timeout to request from authoritative server to
-         * @param i - the ith answer that is being parsed
+         * @param classes - the array to store the class
+         * @param addresses - the array to store the primary name server
+         * @param timeouts - the array to store the timeout to request from authoritative server
+         * @param mailbox - the array to store the responsible authority's mailbox
+         * @param serialNums - the array to store the serial number
+         * @param refreshIntrvls - the array to store the refresh interval, in seconds
+         * @param retryIntrvls - the array to store the retry interval, in seconds
+         * @param expireLimits - the array to store the expire limit, in seconds
+         * @param minTTLs -  the array to store the minimum TTL, in seconds
+         * @param i - the ith resource record that is being parsed
          * @param currIdx - the current ptr location in the packet, r
          * @return - where the ptr was left off in the packet, r
          */
         internal int typeSOAParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts, 
-            StringBuilder[] addresses, int i, int currIdx)
+            StringBuilder[] addresses, StringBuilder[] mailbox, StringBuilder[] serialNums, 
+            StringBuilder[] refreshIntrvls, StringBuilder[] retryIntrvls, StringBuilder[] expireLimits,
+            StringBuilder[] minTTLs, int i, int currIdx)
         {
             var c = helper.getClass(r, currIdx);
             classes[i] = c;

@@ -107,7 +107,7 @@ namespace ConsoleApplication
             var hostnameOffset = hostname.Length + 2;
             var typeClassOffset = 4;
 
-            // initialize the list f names, types, classes, TTLs, and addresses for every answer
+            // initialize the list of names, types, classes, TTLs, and addresses for every answer
             var resourceRecords = answers + authorityRRs + additionalRRs;
             var names = new StringBuilder[resourceRecords];
             var types = new StringBuilder[resourceRecords];
@@ -115,11 +115,23 @@ namespace ConsoleApplication
             var timeouts = new StringBuilder[resourceRecords];
             var addresses = new StringBuilder[resourceRecords];
             
-            // to skip the questions section and get to the start of the answers section
+            // initialize the lists for SOA type record
+            var mailbox = new StringBuilder[resourceRecords];
+            var serialNums = new StringBuilder[resourceRecords];
+            var refreshIntrvls = new StringBuilder[resourceRecords];
+            var retryIntrvls = new StringBuilder[resourceRecords];
+            var expireLimits = new StringBuilder[resourceRecords];
+            var minTTLs = new StringBuilder[resourceRecords];
+            
+            // to skip the questions section and get to the start of the next section
             var currIdx = answersOffset + hostnameOffset + typeClassOffset;
             
-            // this loop grabs the next types, classes, and addresses in the response answers
-            for (int i = 0; i < answers; i++)
+            /*
+            * this loop grabs the types, classes, and addresses for every answer, authority, and additional response.
+            * if the record type is SOA, the primary name server, responsible authority's mailbox, serial number,
+            * refresh interval, retry interval, expire limit, and minimum TTL are also grabbed.
+            */
+            for (int i = 0; i < resourceRecords; i++)
             {
                 var name = helper.getNamePtr(r, currIdx);
                 names[i] = name;
@@ -139,7 +151,9 @@ namespace ConsoleApplication
                         currIdx = parser.typeCNAMEParse(r, classes, timeouts, addresses, i, currIdx);
                         break;
                     case "SOA":
-                        currIdx = parser.typeSOAParse(r, classes, timeouts, addresses, i, currIdx);
+                        currIdx = parser.typeSOAParse(r, classes, timeouts, addresses,
+                                                      mailbox, serialNums, refreshIntrvls, retryIntrvls,
+                                                      expireLimits, minTTLs, i, currIdx);
                         break;
                     case "AAAA":
                         currIdx = parser.typeAAAAParse(r, classes, timeouts, addresses, i, currIdx);
