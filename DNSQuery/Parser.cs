@@ -220,7 +220,8 @@ namespace ConsoleApplication
         }
 
         /*
-         * Helper method for parsing a PTR type response
+         * Helper method for parsing a PTR type response (reverse DNS query)
+         * Only works if the order of the bytes in the ip address is reversed with '.in-addr.arpa' appended
          * @param r - the string array representation of the response packet
          * @param classes - the array to store the class
          * @param addresses - the array to store the canonical (alias) name
