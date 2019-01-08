@@ -170,6 +170,9 @@ namespace ConsoleApplication
                                                       mailboxes, serialNums, refreshIntrvls, retryIntrvls,
                                                       expireLimits, minTTLs, i, currIdx);
                         break;
+                    case "PTR":
+                        currIdx = parser.typePTRParse(r, classes, timeouts, addresses, i, currIdx);
+                        break;
                     case "AAAA":
                         currIdx = parser.typeAAAAParse(r, classes, timeouts, addresses, i, currIdx);
                         break;
