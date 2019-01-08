@@ -513,8 +513,18 @@ namespace ConsoleApplication
             // reverse IPv4 address and append .in-addr.arpa
             else
             {
-                
+                var ipArray = ipAddress.Split(".");
+                var n = ipArray.Length;
+                for (var i = n-1; i >= 0; i--)
+                {
+                    reversed.Append(ipArray[i]);
+                    reversed.Append(".");
+                }
+                reversed.Append("in-addr.arpa");
+                Console.WriteLine(reversed);
             }
+
+            return reversed.ToString();
         }
     }
 }
