@@ -49,6 +49,10 @@ namespace ConsoleApplication
                             case "PTR":
                                 type[1] = 0x0c;
                                 break;
+                            case "-x":
+                                type[1] = 0x0c;
+                                args[2] = helper.reverseDNS(args[1]);
+                                break;
                             case "AAAA":
                                 type[1] = 0x1c;
                                 break;
@@ -66,6 +70,10 @@ namespace ConsoleApplication
                                 break;
                             case "PTR":
                                 type[1] = 0x0c;
+                                break;
+                            case "-x":
+                                type[1] = 0x0c;
+                                args[1] = helper.reverseDNS(args[1]);
                                 break;
                             case "AAAA":
                                 type[1] = 0x1c;

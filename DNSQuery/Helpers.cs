@@ -25,7 +25,8 @@ namespace ConsoleApplication
      *     The class (usually IN for internet)
      *     The IPv4 or IPv6 address(es)
      *     The number of bytes that a name occupies in a packet
-
+     * The class can also perform special features for specific commands such as:
+     *     -x reverses the IP address and appends '.in-addr.arpa' if IPv4, '.ip6.arpa' if IPv6
      */
     public class Helpers
     {
@@ -498,6 +499,22 @@ namespace ConsoleApplication
                 }
             }
             return dnsAddresses;
+        }
+
+        internal String reverseDNS(String ipAddress)
+        {
+            var reversed = new StringBuilder();
+            
+            // reverse IPv6 address and append .ip6.arpa
+            if (ipAddress.Contains(":"))
+            {
+                
+            }
+            // reverse IPv4 address and append .in-addr.arpa
+            else
+            {
+                
+            }
         }
     }
 }
