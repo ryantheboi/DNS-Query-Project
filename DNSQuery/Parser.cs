@@ -15,19 +15,21 @@ namespace ConsoleApplication
      * This class contains methods to parse the different DNS record type responses that may be received
      * Currently, the following DNS record types in a response can be parsed:
      *     A - IPv4 records
-     *     AAAA - IPv6 records
      *     CNAME - Canonical name (alias) records
+     *     SOA - Start of Authority records
+     *     PTR - Domain Name Pointer records (for reverse DNS lookup)
+     *     AAAA - IPv6 records
      */
     public class Parser
     {
         private Helpers helper;
-        
+
         /* Constructor to initialize the Parser object */
         public Parser()
         {
             this.helper = new Helpers();
-        }        
-        
+        }
+
         /*
          * Helper method for parsing an A type response and the timeout
          * @param r - the string array representation of the response packet
@@ -38,14 +40,14 @@ namespace ConsoleApplication
          * @param currIdx - the current ptr location in the packet, r
          * @return - where the ptr was left off in the packet, r
          */
-        internal int typeAParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts, 
+        internal int typeAParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts,
             StringBuilder[] addresses, int i, int currIdx)
         {
-            
+
             var c = helper.getClass(r, currIdx);
             classes[i] = c;
             currIdx += 2; // to move past the bytes for class
-            
+
             timeouts[i] = helper.getTimeout(r, currIdx);
             currIdx += 6; // to move past the bytes for time to live and data length
 
@@ -54,7 +56,7 @@ namespace ConsoleApplication
             currIdx += 4; // to move past the bytes for address
             return currIdx;
         }
-        
+
         /*
          * Helper method for parsing a CNAME type response
          * @param r - the string array representation of the response packet
@@ -65,20 +67,20 @@ namespace ConsoleApplication
          * @param currIdx - the current ptr location in the packet, r
          * @return - where the ptr was left off in the packet, r
          */
-        internal int typeCNAMEParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts, 
-            StringBuilder[] addresses,int i, int currIdx)
+        internal int typeCNAMEParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts,
+            StringBuilder[] addresses, int i, int currIdx)
         {
             var c = helper.getClass(r, currIdx);
             classes[i] = c;
             currIdx += 2; // to move past the bytes for class
-            
+
             timeouts[i] = helper.getTimeout(r, currIdx);
             currIdx += 6; // to move past the bytes for time to live and data length
             var address = new StringBuilder();
-            
+
             // if CNAME starts as a pointer, use recursive getName function
             // else, CNAME starts with its hex size, use iterative getName function
-            if (r[currIdx].Equals("C0")) 
+            if (r[currIdx].Equals("C0"))
             {
                 address = helper.getNamePtr(r, currIdx);
             }
@@ -86,8 +88,9 @@ namespace ConsoleApplication
             {
                 address = helper.getName(r, currIdx);
             }
+
             addresses[i] = address;
-            
+
             // move to the next value until pointer or null terminator is reached
             while (!r[currIdx].Equals("C0") && !r[currIdx].Equals("00"))
             {
@@ -103,9 +106,10 @@ namespace ConsoleApplication
             {
                 currIdx += 1; // move past 1 byte indicating the the null terminator
             }
+
             return currIdx;
         }
-        
+
         /*
          * Helper method for parsing an AAAA type response
          * @param r - the string array representation of the response packet
@@ -116,13 +120,13 @@ namespace ConsoleApplication
          * @param currIdx - the current ptr location in the packet, r
          * @return - where the ptr was left off in the packet, r
          */
-        internal int typeAAAAParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts, 
+        internal int typeAAAAParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts,
             StringBuilder[] addresses, int i, int currIdx)
         {
             var c = helper.getClass(r, currIdx);
             classes[i] = c;
             currIdx += 2; // to move past the bytes for class
-            
+
             timeouts[i] = helper.getTimeout(r, currIdx);
             currIdx += 6; // to move past the bytes for time to live and data length
 
@@ -131,7 +135,7 @@ namespace ConsoleApplication
             currIdx += 16; // to move past the bytes for address
             return currIdx;
         }
-        
+
         /*
          * Helper method for parsing an SOA type response
          * @param r - the string array representation of the response packet
@@ -148,21 +152,21 @@ namespace ConsoleApplication
          * @param currIdx - the current ptr location in the packet, r
          * @return - where the ptr was left off in the packet, r
          */
-        internal int typeSOAParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts, 
-            StringBuilder[] addresses, StringBuilder[] mailboxes, StringBuilder[] serialNums, 
+        internal int typeSOAParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts,
+            StringBuilder[] addresses, StringBuilder[] mailboxes, StringBuilder[] serialNums,
             StringBuilder[] refreshIntrvls, StringBuilder[] retryIntrvls, StringBuilder[] expireLimits,
             StringBuilder[] minTTLs, int i, int currIdx)
         {
             classes[i] = helper.getClass(r, currIdx);
             currIdx += 2; // to move past the bytes for class
-            
+
             timeouts[i] = helper.getTimeout(r, currIdx);
             currIdx += 6; // to move past the bytes for time to live and data length
 
             // if SOA starts as a pointer, use recursive getName function
             // else, SOA starts with its hex size, use iterative getName function
             var address = new StringBuilder();
-            if (r[currIdx].Equals("C0")) 
+            if (r[currIdx].Equals("C0"))
             {
                 address = helper.getNamePtr(r, currIdx);
             }
@@ -170,6 +174,7 @@ namespace ConsoleApplication
             {
                 address = helper.getName(r, currIdx);
             }
+
             addresses[i] = address;
             // count and skip the space that the primary name server occupies in the packet
             var nameBlock = helper.getNameSize(r, currIdx);
@@ -182,7 +187,7 @@ namespace ConsoleApplication
             // if SOA starts as a pointer, use recursive getName function
             // else, SOA starts with its hex size, use iterative getName function
             var mailbox = new StringBuilder();
-            if (r[currIdx].Equals("C0")) 
+            if (r[currIdx].Equals("C0"))
             {
                 mailbox = helper.getNamePtr(r, currIdx);
             }
@@ -190,6 +195,7 @@ namespace ConsoleApplication
             {
                 mailbox = helper.getName(r, currIdx);
             }
+
             mailboxes[i] = mailbox;
             // count and skip the space that the responsible authority's mailbox occupies in the packet
             var mailBlock = helper.getNameSize(r, currIdx);
@@ -210,7 +216,46 @@ namespace ConsoleApplication
             currIdx += 4;
             minTTLs[i] = helper.getDecimal(r, currIdx, 4);
             currIdx += 4;
-            
+
+            return currIdx;
+        }
+
+        /*
+         * Helper method for parsing a PTR type response (reverse DNS query)
+         * @prerequisite: the order of the bytes in the ip address is reversed with '.in-addr.arpa' or '.ip6.arpa'
+         *                appended if the ip address of interest is IPv4 or IPv6, respectively.
+         * @param r - the string array representation of the response packet
+         * @param classes - the array to store the class
+         * @param addresses - the array to store the canonical (alias) name
+         * @param timeouts - the array to store the timeout to request from authoritative server
+         * @param i - the ith resource record that is being parsed
+         * @param currIdx - the current ptr location in the packet, r
+         * @return - where the ptr was left off in the packet, r
+         */
+        internal int typePTRParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts,
+            StringBuilder[] addresses, int i, int currIdx)
+        {
+            var c = helper.getClass(r, currIdx);
+            classes[i] = c;
+            currIdx += 2; // to move past the bytes for class
+
+            timeouts[i] = helper.getTimeout(r, currIdx);
+            currIdx += 6; // to move past the bytes for time to live and data length
+            var address = new StringBuilder();
+
+            // if CNAME starts as a pointer, use recursive getName function
+            // else, CNAME starts with its hex size, use iterative getName function
+            if (r[currIdx].Equals("C0"))
+            {
+                address = helper.getNamePtr(r, currIdx);
+            }
+            else
+            {
+                address = helper.getName(r, currIdx);
+            }
+
+            addresses[i] = address;
+
             return currIdx;
         }
     }

@@ -24,6 +24,9 @@ namespace ConsoleApplication
      *     The DNS record type
      *     The class (usually IN for internet)
      *     The IPv4 or IPv6 address(es)
+     *     The number of bytes that a name occupies in a packet
+     * The class can also perform special features for specific commands such as:
+     *     -x reverses the IP address and appends '.in-addr.arpa' if IPv4, '.ip6.arpa' if IPv6
      */
     public class Helpers
     {
@@ -301,6 +304,9 @@ namespace ConsoleApplication
                 case "0006":
                     type.Append("SOA");
                     break;
+                case "000C":
+                    type.Append("PTR");
+                    break;
                 case "001C":
                     type.Append("AAAA");
                     break;
@@ -493,6 +499,107 @@ namespace ConsoleApplication
                 }
             }
             return dnsAddresses;
+        }
+
+        /*
+         * Helper method to conveniently reverse an IP address for the -x (PTR record) query.
+         * For IPv4 addresses the order of the bytes are reversed and '.in-addr.arpa' is appended.
+         * For IPv6 addresses, the full IPv6 address is reversed, with each hex digit separated by a '.'
+         * and '.ip6.arpa' is appended.
+         * 
+         */
+        internal String reverseDNS(String ipAddress)
+        {
+            var reversed = new StringBuilder();
+            
+            // reverse IPv6 address and append .ip6.arpa
+            if (ipAddress.Contains(":"))
+            {
+                // initialize the 8 groups for the address to be split by
+                var groups = new StringBuilder[8];
+                for (var i = 0; i < 8; i++)
+                {
+                    groups[i] = new StringBuilder();
+                }
+                // split the IPv6 address into groups, of at most 4 hex digits ea, by the colon(s)
+                var groupNum = 0;
+                var hasColon = 0;
+                foreach(var ch in ipAddress)
+                {
+                    if (ch == ':')
+                    {
+                        if (hasColon == 1)
+                        {
+                            groups[groupNum].Append(':');
+                        }
+                        groupNum++;
+                        hasColon = 1;
+                    }
+                    else
+                    {
+                        groups[groupNum].Append(ch);
+                        hasColon = 0;
+                    }
+                }
+                // reconstruct the full IPv6 address, w/ every hex digit not separated by anything
+                var reconstruct = new StringBuilder();
+                foreach (var group in groups)
+                {
+                    if (!group.Equals(""))
+                    {
+                        // if there is a double colon, append every zero group that is covered there
+                        if (group[0] == ':')
+                        {
+                            var zeroGroups = 8 - groupNum;
+                            for (var i = 0; i < zeroGroups; i++)
+                            {
+                                reconstruct.Append("0000");
+                            }
+                        }
+                        else
+                        {
+                            // append current group to the reconstruction, including leading 0s if any
+                            var count = group.Length;
+                            var zeroCount = 4 - count;
+                            for (var i = 0; i < zeroCount; i++)
+                            {
+                                reconstruct.Append("0");
+                            }
+
+                            for (var i = 0; i < count; i++)
+                            {
+                                reconstruct.Append(group[i]);
+                            }
+                        }
+                    }
+                }
+                // reverse the reconstructed IPv6 address, separate each hex digit with '0', append '.ip6.arpa'
+                for(var i = 32; i >= 0; i--)
+                {
+                    try
+                    {
+                        reversed.Append(reconstruct[i]);
+                        reversed.Append('.');
+                    }
+                    catch{}
+                }
+                reversed.Append("ip6.arpa");
+            }
+            
+            // reverse IPv4 address and append .in-addr.arpa
+            else
+            {
+                var ipArray = ipAddress.Split(".");
+                var n = ipArray.Length;
+                for (var i = n-1; i >= 0; i--)
+                {
+                    reversed.Append(ipArray[i]);
+                    reversed.Append(".");
+                }
+                reversed.Append("in-addr.arpa");
+            }
+
+            return reversed.ToString();
         }
     }
 }
