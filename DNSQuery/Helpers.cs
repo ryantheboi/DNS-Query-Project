@@ -584,7 +584,6 @@ namespace ConsoleApplication
                     catch{}
                 }
                 reversed.Append("ip6.arpa");
-                Console.WriteLine(reversed);
             }
             
             // reverse IPv4 address and append .in-addr.arpa
@@ -598,7 +597,6 @@ namespace ConsoleApplication
                     reversed.Append(".");
                 }
                 reversed.Append("in-addr.arpa");
-                Console.WriteLine(reversed);
             }
 
             return reversed.ToString();
