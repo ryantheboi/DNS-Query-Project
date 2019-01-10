@@ -17,6 +17,7 @@ namespace ConsoleApplication
      *     A - IPv4 records
      *     CNAME - Canonical name (alias) records
      *     SOA - Start of Authority records
+     *     PTR - Domain Name Pointer records (for reverse DNS lookup)
      *     AAAA - IPv6 records
      */
     public class Parser
