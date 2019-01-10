@@ -511,9 +511,14 @@ namespace ConsoleApplication
             // reverse IPv6 address and append .ip6.arpa
             if (ipAddress.Contains(":"))
             {
-                // split the IPv6 address into groups, of at most 4 hex digits ea, by the colon(s)
+                // initialize the 8 groups for the address to be split by
                 var groups = new StringBuilder[8];
-                var groupNum = 1;
+                for (var i = 0; i < 8; i++)
+                {
+                    groups[i] = new StringBuilder();
+                }
+                // split the IPv6 address into groups, of at most 4 hex digits ea, by the colon(s)
+                var groupNum = 0;
                 var hasColon = 0;
                 foreach(var ch in ipAddress)
                 {
@@ -536,27 +541,31 @@ namespace ConsoleApplication
                 var reconstruct = new StringBuilder();
                 foreach (var group in groups)
                 {
-                    // if there is a double colon, append every zero group that is covered there
-                    var zeroGroups = 8 - groupNum;
-                    if (group[0] == ':')
+                    if (!group.Equals(""))
                     {
-                        for (var i = 0; i < zeroGroups; i++)
+                        // if there is a double colon, append every zero group that is covered there
+                        if (group[0] == ':')
                         {
-                            reconstruct.Append("0000");
+                            var zeroGroups = 8 - groupNum;
+                            for (var i = 0; i < zeroGroups; i++)
+                            {
+                                reconstruct.Append("0000");
+                            }
                         }
-                    }
-                    else
-                    {
-                        // append current group to the reconstruction, including leading 0s if any
-                        var count = group.Length;
-                        var zeroCount = 4 - count;
-                        for (var i = 0; i < zeroCount; i++)
+                        else
                         {
-                            reconstruct.Append("0");
-                        }
-                        for (var i = 0; i < count; i++)
-                        {
-                            reconstruct.Append(group[i]);
+                            // append current group to the reconstruction, including leading 0s if any
+                            var count = group.Length;
+                            var zeroCount = 4 - count;
+                            for (var i = 0; i < zeroCount; i++)
+                            {
+                                reconstruct.Append("0");
+                            }
+
+                            for (var i = 0; i < count; i++)
+                            {
+                                reconstruct.Append(group[i]);
+                            }
                         }
                     }
                 }
@@ -571,6 +580,7 @@ namespace ConsoleApplication
                     catch{}
                 }
                 reversed.Append("ip6.arpa");
+                Console.WriteLine(reversed);
             }
             
             // reverse IPv4 address and append .in-addr.arpa
