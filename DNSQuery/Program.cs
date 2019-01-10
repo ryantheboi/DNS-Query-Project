@@ -51,7 +51,7 @@ namespace ConsoleApplication
                                 break;
                             case "-x":
                                 type[1] = 0x0c;
-                                args[2] = helper.reverseDNS(args[1]);
+                                args[2] = helper.reverseDNS(args[2]);
                                 break;
                             case "AAAA":
                                 type[1] = 0x1c;

@@ -502,7 +502,11 @@ namespace ConsoleApplication
         }
 
         /*
-         * Helper method to reverse an IP address for the PTR record type query
+         * Helper method to conveniently reverse an IP address for the -x (PTR record) query.
+         * For IPv4 addresses the order of the bytes are reversed and '.in-addr.arpa' is appended.
+         * For IPv6 addresses, the full IPv6 address is reversed, with each hex digit separated by a '.'
+         * and '.ip6.arpa' is appended.
+         * 
          */
         internal String reverseDNS(String ipAddress)
         {
