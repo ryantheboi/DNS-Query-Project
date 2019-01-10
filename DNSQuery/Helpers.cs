@@ -501,6 +501,9 @@ namespace ConsoleApplication
             return dnsAddresses;
         }
 
+        /*
+         * Helper method to reverse an IP address for the PTR record type query
+         */
         internal String reverseDNS(String ipAddress)
         {
             var reversed = new StringBuilder();
@@ -508,8 +511,68 @@ namespace ConsoleApplication
             // reverse IPv6 address and append .ip6.arpa
             if (ipAddress.Contains(":"))
             {
-                
+                // split the IPv6 address into groups, of at most 4 hex digits ea, by the colon(s)
+                var groups = new StringBuilder[8];
+                var groupNum = 1;
+                var hasColon = 0;
+                foreach(var ch in ipAddress)
+                {
+                    if (ch == ':')
+                    {
+                        if (hasColon == 1)
+                        {
+                            groups[groupNum].Append(':');
+                        }
+                        groupNum++;
+                        hasColon = 1;
+                    }
+                    else
+                    {
+                        groups[groupNum].Append(ch);
+                        hasColon = 0;
+                    }
+                }
+                // reconstruct the full IPv6 address, w/ every hex digit not separated by anything
+                var reconstruct = new StringBuilder();
+                foreach (var group in groups)
+                {
+                    // if there is a double colon, append every zero group that is covered there
+                    var zeroGroups = 8 - groupNum;
+                    if (group[0] == ':')
+                    {
+                        for (var i = 0; i < zeroGroups; i++)
+                        {
+                            reconstruct.Append("0000");
+                        }
+                    }
+                    else
+                    {
+                        // append current group to the reconstruction, including leading 0s if any
+                        var count = group.Length;
+                        var zeroCount = 4 - count;
+                        for (var i = 0; i < zeroCount; i++)
+                        {
+                            reconstruct.Append("0");
+                        }
+                        for (var i = 0; i < count; i++)
+                        {
+                            reconstruct.Append(group[i]);
+                        }
+                    }
+                }
+                // reverse the reconstructed IPv6 address, separate each hex digit with '0', append '.ip6.arpa'
+                for(var i = 32; i >= 0; i--)
+                {
+                    try
+                    {
+                        reversed.Append(reconstruct[i]);
+                        reversed.Append('.');
+                    }
+                    catch{}
+                }
+                reversed.Append("ip6.arpa");
             }
+            
             // reverse IPv4 address and append .in-addr.arpa
             else
             {
