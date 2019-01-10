@@ -298,6 +298,9 @@ namespace ConsoleApplication
                 case "0001":
                     type.Append("A");
                     break;
+                case "0002":
+                    type.Append("NS");
+                    break;
                 case "0005":
                     type.Append("CNAME");
                     break;
@@ -306,6 +309,9 @@ namespace ConsoleApplication
                     break;
                 case "000C":
                     type.Append("PTR");
+                    break;
+                case "000F":
+                    type.Append("MX");
                     break;
                 case "001C":
                     type.Append("AAAA");

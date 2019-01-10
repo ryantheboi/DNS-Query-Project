@@ -43,6 +43,9 @@ namespace ConsoleApplication
                         dnsServer = args[0];
                         switch (args[1])
                         {
+                            case "NS":
+                                type[1] = 0x02;
+                                break;
                             case "SOA":
                                 type[1] = 0x06;
                                 break;
@@ -52,6 +55,9 @@ namespace ConsoleApplication
                             case "-x":
                                 type[1] = 0x0c;
                                 args[2] = helper.reverseDNS(args[2]);
+                                break;
+                            case "MX":
+                                type[1] = 0x0f;
                                 break;
                             case "AAAA":
                                 type[1] = 0x1c;
@@ -65,6 +71,9 @@ namespace ConsoleApplication
                     case 2:
                         switch (args[0])
                         {
+                            case "NS":
+                                type[1] = 0x02;
+                                break;
                             case "SOA":
                                 type[1] = 0x06;
                                 break;
@@ -74,6 +83,9 @@ namespace ConsoleApplication
                             case "-x":
                                 type[1] = 0x0c;
                                 args[1] = helper.reverseDNS(args[1]);
+                                break;
+                            case "MX":
+                                type[1] = 0x0f;
                                 break;
                             case "AAAA":
                                 type[1] = 0x1c;
