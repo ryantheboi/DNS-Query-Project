@@ -179,7 +179,7 @@ namespace ConsoleApplication
             // count and skip the space that the primary name server occupies in the packet
             var nameBlock = helper.getNameSize(r, currIdx);
             currIdx += nameBlock[0];
-            if (nameBlock[1] == 1) // there is a pointer in the mailbox name, skip the 2 bytes
+            if (nameBlock[1] == 1) // there is a pointer in the name, skip the 2 bytes
             {
                 currIdx += 2;
             }
@@ -290,9 +290,16 @@ namespace ConsoleApplication
             {
                 address = helper.getName(r, currIdx);
             }
-
             addresses[i] = address;
-
+            
+            // count and skip the space that the name server occupies in the packet
+            var nameBlock = helper.getNameSize(r, currIdx);
+            currIdx += nameBlock[0];
+            if (nameBlock[1] == 1) // there is a pointer in the name, skip the 2 bytes
+            {
+                currIdx += 2;
+            }
+            
             return currIdx;
         }
     }
