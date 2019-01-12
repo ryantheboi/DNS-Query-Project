@@ -243,8 +243,45 @@ namespace ConsoleApplication
             currIdx += 6; // to move past the bytes for time to live and data length
             var address = new StringBuilder();
 
-            // if CNAME starts as a pointer, use recursive getName function
-            // else, CNAME starts with its hex size, use iterative getName function
+            // if name starts as a pointer, use recursive getName function
+            // else, name starts with its hex size, use iterative getName function
+            if (r[currIdx].Equals("C0"))
+            {
+                address = helper.getNamePtr(r, currIdx);
+            }
+            else
+            {
+                address = helper.getName(r, currIdx);
+            }
+
+            addresses[i] = address;
+
+            return currIdx;
+        }
+        
+        /*
+         * Helper method for parsing a NS type response
+         * @param r - the string array representation of the response packet
+         * @param classes - the array to store the class
+         * @param addresses - the array to store the canonical (alias) name
+         * @param timeouts - the array to store the timeout to request from authoritative server
+         * @param i - the ith resource record that is being parsed
+         * @param currIdx - the current ptr location in the packet, r
+         * @return - where the ptr was left off in the packet, r
+         */
+        internal int typeNSParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts,
+            StringBuilder[] addresses, int i, int currIdx)
+        {
+            var c = helper.getClass(r, currIdx);
+            classes[i] = c;
+            currIdx += 2; // to move past the bytes for class
+
+            timeouts[i] = helper.getTimeout(r, currIdx);
+            currIdx += 6; // to move past the bytes for time to live and data length
+            var address = new StringBuilder();
+
+            // if name starts as a pointer, use recursive getName function
+            // else, name starts with its hex size, use iterative getName function
             if (r[currIdx].Equals("C0"))
             {
                 address = helper.getNamePtr(r, currIdx);

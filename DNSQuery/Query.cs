@@ -162,6 +162,9 @@ namespace ConsoleApplication
                     case "A":
                         currIdx = parser.typeAParse(r, classes, timeouts, addresses, i, currIdx);
                         break;
+                    case "NS":
+                        currIdx = parser.typeNSParse(r, classes, timeouts, addresses, i, currIdx);
+                        break;
                     case "CNAME":
                         currIdx = parser.typeCNAMEParse(r, classes, timeouts, addresses, i, currIdx);
                         break;
