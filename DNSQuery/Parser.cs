@@ -15,9 +15,11 @@ namespace ConsoleApplication
      * This class contains methods to parse the different DNS record type responses that may be received
      * Currently, the following DNS record types in a response can be parsed:
      *     A - IPv4 records
+     *     NS - Authoritative Name Server records
      *     CNAME - Canonical name (alias) records
      *     SOA - Start of Authority records
      *     PTR - Domain Name Pointer records (for reverse DNS lookup)
+     *     MX - Mail Exchange records
      *     AAAA - IPv6 records
      */
     public class Parser
@@ -226,7 +228,7 @@ namespace ConsoleApplication
          *                appended if the ip address of interest is IPv4 or IPv6, respectively.
          * @param r - the string array representation of the response packet
          * @param classes - the array to store the class
-         * @param addresses - the array to store the canonical (alias) name
+         * @param addresses - the array to store the hostname pointed to by the ip address
          * @param timeouts - the array to store the timeout to request from authoritative server
          * @param i - the ith resource record that is being parsed
          * @param currIdx - the current ptr location in the packet, r
@@ -263,7 +265,7 @@ namespace ConsoleApplication
          * Helper method for parsing a NS type response
          * @param r - the string array representation of the response packet
          * @param classes - the array to store the class
-         * @param addresses - the array to store the canonical (alias) name
+         * @param addresses - the array to store the name of the name server
          * @param timeouts - the array to store the timeout to request from authoritative server
          * @param i - the ith resource record that is being parsed
          * @param currIdx - the current ptr location in the packet, r
@@ -307,7 +309,8 @@ namespace ConsoleApplication
          * Helper method for parsing an MX type response
          * @param r - the string array representation of the response packet
          * @param classes - the array to store the class
-         * @param addresses - the array to store the canonical (alias) name
+         * @param priority - the array to store the preference number for the mail server
+         * @param addresses - the array to store the name of the mail server
          * @param timeouts - the array to store the timeout to request from authoritative server
          * @param i - the ith resource record that is being parsed
          * @param currIdx - the current ptr location in the packet, r

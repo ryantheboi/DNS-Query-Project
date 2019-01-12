@@ -11,8 +11,8 @@ using System.Text;
 /*
  * @author - Ryan Chung
  * This program sends DNS query requests and parses the response back
- * Currently is capable of sending A, SOA, PTR, and AAAA requests
- * Currently is capable of parsing A, CNAME, SOA, PTR and AAAA type responses
+ * Currently is capable of sending A, NS, SOA, PTR, MX, and AAAA requests
+ * Currently is capable of parsing A, NS, CNAME, SOA, PTR, MX and AAAA type responses
  */
 namespace ConsoleApplication
 {
