@@ -302,5 +302,53 @@ namespace ConsoleApplication
             
             return currIdx;
         }
+        
+        /*
+         * Helper method for parsing an MX type response
+         * @param r - the string array representation of the response packet
+         * @param classes - the array to store the class
+         * @param addresses - the array to store the canonical (alias) name
+         * @param timeouts - the array to store the timeout to request from authoritative server
+         * @param i - the ith resource record that is being parsed
+         * @param currIdx - the current ptr location in the packet, r
+         * @return - where the ptr was left off in the packet, r
+         */
+        internal int typeMXParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts,
+            StringBuilder[] priority, StringBuilder[] addresses, int i, int currIdx)
+        {
+            var c = helper.getClass(r, currIdx);
+            classes[i] = c;
+            currIdx += 2; // to move past the bytes for class
+
+            timeouts[i] = helper.getTimeout(r, currIdx);
+            currIdx += 6; // to move past the bytes for time to live and data length
+            var address = new StringBuilder();
+
+            // grabs the preference number (lower number = higher priority)
+            priority[i] = helper.getDecimal(r, currIdx, 4);
+            currIdx += 4;
+            
+            // if name starts as a pointer, use recursive getName function
+            // else, name starts with its hex size, use iterative getName function
+            if (r[currIdx].Equals("C0"))
+            {
+                address = helper.getNamePtr(r, currIdx);
+            }
+            else
+            {
+                address = helper.getName(r, currIdx);
+            }
+            addresses[i] = address;
+            
+            // count and skip the space that the name server occupies in the packet
+            var nameBlock = helper.getNameSize(r, currIdx);
+            currIdx += nameBlock[0];
+            if (nameBlock[1] == 1) // there is a pointer in the name, skip the 2 bytes
+            {
+                currIdx += 2;
+            }
+            
+            return currIdx;
+        }
     }
 }

@@ -176,6 +176,9 @@ namespace ConsoleApplication
                     case "PTR":
                         currIdx = parser.typePTRParse(r, classes, timeouts, addresses, i, currIdx);
                         break;
+                    case "MX":
+                        currIdx = parser.typeMXParse(r, classes, timeouts, addresses, mailboxes, i, currIdx);
+                        break;
                     case "AAAA":
                         currIdx = parser.typeAAAAParse(r, classes, timeouts, addresses, i, currIdx);
                         break;
