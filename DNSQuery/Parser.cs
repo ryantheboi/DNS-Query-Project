@@ -325,8 +325,11 @@ namespace ConsoleApplication
             var address = new StringBuilder();
 
             // grabs the preference number (lower number = higher priority)
-            priority[i] = helper.getDecimal(r, currIdx, 4);
-            currIdx += 4;
+            priority[i] = helper.getDecimal(r, currIdx, 2);
+            Console.WriteLine(r[currIdx]);
+            Console.WriteLine(helper.getDecimal(r, currIdx, 2));
+            Console.WriteLine(helper.getDecimal(r, currIdx, 2));
+            currIdx += 2;
             
             // if name starts as a pointer, use recursive getName function
             // else, name starts with its hex size, use iterative getName function

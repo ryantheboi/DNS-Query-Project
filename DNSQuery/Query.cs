@@ -177,6 +177,7 @@ namespace ConsoleApplication
                         currIdx = parser.typePTRParse(r, classes, timeouts, addresses, i, currIdx);
                         break;
                     case "MX":
+                        // note for this case, addresses represents preference number of the mail server
                         currIdx = parser.typeMXParse(r, classes, timeouts, addresses, mailboxes, i, currIdx);
                         break;
                     case "AAAA":
@@ -202,6 +203,10 @@ namespace ConsoleApplication
                         result.AppendFormat("{0, -1} {1, -2} {2, -2} {3, -2} {4, -2} {5, -2} {6}", "",
                                             mailboxes[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
                                             expireLimits[RR], minTTLs[RR]);
+                    }
+                    else if (types[RR].Equals("MX"))
+                    {
+                        result.Append("  " + mailboxes[RR]);
                     }
                     Console.WriteLine(result);
                     RR++;
@@ -244,6 +249,10 @@ namespace ConsoleApplication
                         result.AppendFormat("{0, -1} {1, -2} {2, -2} {3, -2} {4, -2} {5, -2} {6}", "",
                                             mailboxes[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
                                             expireLimits[RR], minTTLs[RR]);
+                    }
+                    else if (types[RR].Equals("MX"))
+                    {
+                        result.Append("  " + mailboxes[RR]);
                     }
                     Console.WriteLine(result);
                     RR++;
