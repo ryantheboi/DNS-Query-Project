@@ -11,8 +11,8 @@ using System.Text;
 /*
  * @author - Ryan Chung
  * This program sends DNS query requests and parses the response back
- * Currently is capable of sending A, SOA, PTR, and AAAA requests
- * Currently is capable of parsing A, CNAME, SOA, PTR and AAAA type responses
+ * Currently is capable of sending A, NS, SOA, PTR, MX, and AAAA requests
+ * Currently is capable of parsing A, NS, CNAME, SOA, PTR, MX and AAAA type responses
  */
 namespace ConsoleApplication
 {
@@ -43,6 +43,9 @@ namespace ConsoleApplication
                         dnsServer = args[0];
                         switch (args[1])
                         {
+                            case "NS":
+                                type[1] = 0x02;
+                                break;
                             case "SOA":
                                 type[1] = 0x06;
                                 break;
@@ -52,6 +55,9 @@ namespace ConsoleApplication
                             case "-x":
                                 type[1] = 0x0c;
                                 args[2] = helper.reverseDNS(args[2]);
+                                break;
+                            case "MX":
+                                type[1] = 0x0f;
                                 break;
                             case "AAAA":
                                 type[1] = 0x1c;
@@ -65,6 +71,9 @@ namespace ConsoleApplication
                     case 2:
                         switch (args[0])
                         {
+                            case "NS":
+                                type[1] = 0x02;
+                                break;
                             case "SOA":
                                 type[1] = 0x06;
                                 break;
@@ -74,6 +83,9 @@ namespace ConsoleApplication
                             case "-x":
                                 type[1] = 0x0c;
                                 args[1] = helper.reverseDNS(args[1]);
+                                break;
+                            case "MX":
+                                type[1] = 0x0f;
                                 break;
                             case "AAAA":
                                 type[1] = 0x1c;

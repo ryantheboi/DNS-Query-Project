@@ -15,9 +15,11 @@ namespace ConsoleApplication
      * This class contains methods to parse the different DNS record type responses that may be received
      * Currently, the following DNS record types in a response can be parsed:
      *     A - IPv4 records
+     *     NS - Authoritative Name Server records
      *     CNAME - Canonical name (alias) records
      *     SOA - Start of Authority records
      *     PTR - Domain Name Pointer records (for reverse DNS lookup)
+     *     MX - Mail Exchange records
      *     AAAA - IPv6 records
      */
     public class Parser
@@ -179,7 +181,7 @@ namespace ConsoleApplication
             // count and skip the space that the primary name server occupies in the packet
             var nameBlock = helper.getNameSize(r, currIdx);
             currIdx += nameBlock[0];
-            if (nameBlock[1] == 1) // there is a pointer in the mailbox name, skip the 2 bytes
+            if (nameBlock[1] == 1) // there is a pointer in the name, skip the 2 bytes
             {
                 currIdx += 2;
             }
@@ -226,7 +228,7 @@ namespace ConsoleApplication
          *                appended if the ip address of interest is IPv4 or IPv6, respectively.
          * @param r - the string array representation of the response packet
          * @param classes - the array to store the class
-         * @param addresses - the array to store the canonical (alias) name
+         * @param addresses - the array to store the hostname pointed to by the ip address
          * @param timeouts - the array to store the timeout to request from authoritative server
          * @param i - the ith resource record that is being parsed
          * @param currIdx - the current ptr location in the packet, r
@@ -243,8 +245,8 @@ namespace ConsoleApplication
             currIdx += 6; // to move past the bytes for time to live and data length
             var address = new StringBuilder();
 
-            // if CNAME starts as a pointer, use recursive getName function
-            // else, CNAME starts with its hex size, use iterative getName function
+            // if name starts as a pointer, use recursive getName function
+            // else, name starts with its hex size, use iterative getName function
             if (r[currIdx].Equals("C0"))
             {
                 address = helper.getNamePtr(r, currIdx);
@@ -256,6 +258,102 @@ namespace ConsoleApplication
 
             addresses[i] = address;
 
+            return currIdx;
+        }
+        
+        /*
+         * Helper method for parsing a NS type response
+         * @param r - the string array representation of the response packet
+         * @param classes - the array to store the class
+         * @param addresses - the array to store the name of the name server
+         * @param timeouts - the array to store the timeout to request from authoritative server
+         * @param i - the ith resource record that is being parsed
+         * @param currIdx - the current ptr location in the packet, r
+         * @return - where the ptr was left off in the packet, r
+         */
+        internal int typeNSParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts,
+            StringBuilder[] addresses, int i, int currIdx)
+        {
+            var c = helper.getClass(r, currIdx);
+            classes[i] = c;
+            currIdx += 2; // to move past the bytes for class
+
+            timeouts[i] = helper.getTimeout(r, currIdx);
+            currIdx += 6; // to move past the bytes for time to live and data length
+            var address = new StringBuilder();
+
+            // if name starts as a pointer, use recursive getName function
+            // else, name starts with its hex size, use iterative getName function
+            if (r[currIdx].Equals("C0"))
+            {
+                address = helper.getNamePtr(r, currIdx);
+            }
+            else
+            {
+                address = helper.getName(r, currIdx);
+            }
+            addresses[i] = address;
+            
+            // count and skip the space that the name server occupies in the packet
+            var nameBlock = helper.getNameSize(r, currIdx);
+            currIdx += nameBlock[0];
+            if (nameBlock[1] == 1) // there is a pointer in the name, skip the 2 bytes
+            {
+                currIdx += 2;
+            }
+            
+            return currIdx;
+        }
+        
+        /*
+         * Helper method for parsing an MX type response
+         * @param r - the string array representation of the response packet
+         * @param classes - the array to store the class
+         * @param priority - the array to store the preference number for the mail server
+         * @param addresses - the array to store the name of the mail server
+         * @param timeouts - the array to store the timeout to request from authoritative server
+         * @param i - the ith resource record that is being parsed
+         * @param currIdx - the current ptr location in the packet, r
+         * @return - where the ptr was left off in the packet, r
+         */
+        internal int typeMXParse(string[] r, StringBuilder[] classes, StringBuilder[] timeouts,
+            StringBuilder[] priority, StringBuilder[] addresses, int i, int currIdx)
+        {
+            var c = helper.getClass(r, currIdx);
+            classes[i] = c;
+            currIdx += 2; // to move past the bytes for class
+
+            timeouts[i] = helper.getTimeout(r, currIdx);
+            currIdx += 6; // to move past the bytes for time to live and data length
+            var address = new StringBuilder();
+
+            // grabs the preference number (lower number = higher priority)
+            priority[i] = helper.getDecimal(r, currIdx, 2);
+            Console.WriteLine(r[currIdx]);
+            Console.WriteLine(helper.getDecimal(r, currIdx, 2));
+            Console.WriteLine(helper.getDecimal(r, currIdx, 2));
+            currIdx += 2;
+            
+            // if name starts as a pointer, use recursive getName function
+            // else, name starts with its hex size, use iterative getName function
+            if (r[currIdx].Equals("C0"))
+            {
+                address = helper.getNamePtr(r, currIdx);
+            }
+            else
+            {
+                address = helper.getName(r, currIdx);
+            }
+            addresses[i] = address;
+            
+            // count and skip the space that the name server occupies in the packet
+            var nameBlock = helper.getNameSize(r, currIdx);
+            currIdx += nameBlock[0];
+            if (nameBlock[1] == 1) // there is a pointer in the name, skip the 2 bytes
+            {
+                currIdx += 2;
+            }
+            
             return currIdx;
         }
     }
