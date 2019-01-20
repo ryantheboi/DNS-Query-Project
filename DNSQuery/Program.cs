@@ -118,8 +118,6 @@ namespace ConsoleApplication
                             // if connection times out, try next dns server
                             if (query.getTimedOut())
                             {
-                                Console.WriteLine(";; connection timed out; no servers could be reached");
-                                Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")");
                                 query.toggleTimedOut();
                                 num++;
                             }

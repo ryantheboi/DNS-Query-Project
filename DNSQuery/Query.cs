@@ -30,7 +30,6 @@ namespace ConsoleApplication
         {
             this.helper = new Helpers();
             this.parser = new Parser();
-            this.timer = new Stopwatch();
         }
         
         /*
@@ -39,6 +38,7 @@ namespace ConsoleApplication
          */
         public void SendRequest(string dnsServer, byte[] type, string hostname)
         {
+            timer = new Stopwatch();
             timer.Start();
             
             var client = new UdpClient();
