@@ -66,6 +66,7 @@ namespace ConsoleApplication
                                 type[1] = 0x01;
                                 break;
                         }
+
                         hostname = args[2];
                         break;
                     case 2:
@@ -94,6 +95,7 @@ namespace ConsoleApplication
                                 type[1] = 0x01;
                                 break;
                         }
+
                         hostname = args[1];
                         break;
                     case 1:
@@ -113,12 +115,21 @@ namespace ConsoleApplication
                         {
                             dnsServer = dnsServers[num].ToString();
                             query.SendRequest(dnsServer, type, hostname);
-                            Console.WriteLine();
-                            Console.WriteLine(";; Query time: " + query.getQueryTime() + " msec");
-                            Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")");
-                            Console.WriteLine(";; WHEN: " + query.getTimeStamp());
-                            exception = ""; // working dns server found, break out of loop
-                            break;
+                            // if connection times out, try next dns server
+                            if (query.getTimedOut())
+                            {
+                                query.toggleTimedOut();
+                                num++;
+                            }
+                            else
+                            {
+                                Console.WriteLine();
+                                Console.WriteLine(";; Query time: " + query.getQueryTime() + " msec");
+                                Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")");
+                                Console.WriteLine(";; WHEN: " + query.getTimeStamp());
+                                exception = ""; // working dns server found, break out of loop
+                                break;
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -129,7 +140,7 @@ namespace ConsoleApplication
 
                     if (num == numDnsServers)
                     {
-                        Console.WriteLine("No local DNS servers found.  Please specify one.");
+                        Console.WriteLine(";; unable to send request");
                     }
                 }
 
@@ -138,10 +149,19 @@ namespace ConsoleApplication
                     try
                     {
                         query.SendRequest(dnsServer, type, hostname);
-                        Console.WriteLine();
-                        Console.WriteLine(";; Query time: " + query.getQueryTime() + " msec");
-                        Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")");
-                        Console.WriteLine(";; WHEN: " + query.getTimeStamp());
+                        if (query.getTimedOut())
+                        {
+                            Console.WriteLine(";; connection timed out; no servers could be reached");
+                            Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")");
+                            query.toggleTimedOut();
+                        }
+                        else
+                        {
+                            Console.WriteLine();
+                            Console.WriteLine(";; Query time: " + query.getQueryTime() + " msec");
+                            Console.WriteLine(";; SERVER: " + dnsServer + "#53(" + dnsServer + ")");
+                            Console.WriteLine(";; WHEN: " + query.getTimeStamp());
+                        }
                     }
                     catch
                     {
