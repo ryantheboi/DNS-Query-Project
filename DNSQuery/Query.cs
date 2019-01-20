@@ -23,6 +23,7 @@ namespace ConsoleApplication
         private Stopwatch timer;
         private String queryTime;
         private String timeStamp;
+        private bool timedOut = false;
 
         /* Constructor to initialize the Query object */
         public Query()
@@ -84,179 +85,192 @@ namespace ConsoleApplication
          */
         private void ResponseParse(UdpClient client, IPEndPoint ep, string hostname)
         {
-            byte[] response = client.Receive(ref ep);
-            timer.Stop();
-            queryTime = timer.ElapsedMilliseconds.ToString();
-         
-            Console.WriteLine(";; Got answer:");
-            var responseHex = BitConverter.ToString(response);
-            var r = responseHex.Split("-");
-            
-            // initialize helper obj and print the info in the 12 byte header
-            
-            helper.printHeader(r);
-            
-
-            // get the number of answer, authority, and additional resource records in response
-            var answers = helper.getAnswers(r);
-            var authorityRRs = helper.getAuthorityRRs(r);
-            var additionalRRs = helper.getAdditionalRRs(r);
-            
-            // to move past the queries section
-            var answersOffset = 12; 
-            var hostnameOffset = hostname.Length + 2;
-            var typeClassOffset = 4;
-
-            // initialize the list of names, types, classes, TTLs, and addresses for every answer
-            var resourceRecords = answers + authorityRRs + additionalRRs;
-            var names = new StringBuilder[resourceRecords];
-            var types = new StringBuilder[resourceRecords];
-            var classes = new StringBuilder[resourceRecords];
-            var timeouts = new StringBuilder[resourceRecords];
-            var addresses = new StringBuilder[resourceRecords];
-            
-            // initialize the lists for SOA type record
-            var mailboxes = new StringBuilder[resourceRecords];
-            var serialNums = new StringBuilder[resourceRecords];
-            var refreshIntrvls = new StringBuilder[resourceRecords];
-            var retryIntrvls = new StringBuilder[resourceRecords];
-            var expireLimits = new StringBuilder[resourceRecords];
-            var minTTLs = new StringBuilder[resourceRecords];
-            
-            // to skip the questions section and get to the start of the next section
-            var currIdx = answersOffset + hostnameOffset + typeClassOffset;
-            
-            /*
-            * this loop grabs the types, classes, and addresses for every answer, authority, and additional response.
-            * if the record type is SOA, the primary name server, responsible authority's mailbox, serial number,
-            * refresh interval, retry interval, expire limit, and minimum TTL are also grabbed.
-            */
-            for (var i = 0; i < resourceRecords; i++)
+            var asyncResult = client.BeginReceive( null, null );
+            asyncResult.AsyncWaitHandle.WaitOne( 5000 );
+            if (asyncResult.IsCompleted)
             {
-                // if name starts as a pointer, use recursive getName function
-                // else, name starts with its hex size, use iterative getName function
-                var name = new StringBuilder();
-                if (r[currIdx].Equals("C0")) 
+                byte[] response = client.EndReceive(asyncResult, ref ep);
+                timer.Stop();
+                queryTime = timer.ElapsedMilliseconds.ToString();
+
+                Console.WriteLine(";; Got answer:");
+                var responseHex = BitConverter.ToString(response);
+                var r = responseHex.Split("-");
+
+                // initialize helper obj and print the info in the 12 byte header
+
+                helper.printHeader(r);
+
+
+                // get the number of answer, authority, and additional resource records in response
+                var answers = helper.getAnswers(r);
+                var authorityRRs = helper.getAuthorityRRs(r);
+                var additionalRRs = helper.getAdditionalRRs(r);
+
+                // to move past the queries section
+                var answersOffset = 12;
+                var hostnameOffset = hostname.Length + 2;
+                var typeClassOffset = 4;
+
+                // initialize the list of names, types, classes, TTLs, and addresses for every answer
+                var resourceRecords = answers + authorityRRs + additionalRRs;
+                var names = new StringBuilder[resourceRecords];
+                var types = new StringBuilder[resourceRecords];
+                var classes = new StringBuilder[resourceRecords];
+                var timeouts = new StringBuilder[resourceRecords];
+                var addresses = new StringBuilder[resourceRecords];
+
+                // initialize the lists for SOA type record
+                var mailboxes = new StringBuilder[resourceRecords];
+                var serialNums = new StringBuilder[resourceRecords];
+                var refreshIntrvls = new StringBuilder[resourceRecords];
+                var retryIntrvls = new StringBuilder[resourceRecords];
+                var expireLimits = new StringBuilder[resourceRecords];
+                var minTTLs = new StringBuilder[resourceRecords];
+
+                // to skip the questions section and get to the start of the next section
+                var currIdx = answersOffset + hostnameOffset + typeClassOffset;
+
+                /*
+                * this loop grabs the types, classes, and addresses for every answer, authority, and additional response.
+                * if the record type is SOA, the primary name server, responsible authority's mailbox, serial number,
+                * refresh interval, retry interval, expire limit, and minimum TTL are also grabbed.
+                */
+                for (var i = 0; i < resourceRecords; i++)
                 {
-                    name = helper.getNamePtr(r, currIdx);
+                    // if name starts as a pointer, use recursive getName function
+                    // else, name starts with its hex size, use iterative getName function
+                    var name = new StringBuilder();
+                    if (r[currIdx].Equals("C0"))
+                    {
+                        name = helper.getNamePtr(r, currIdx);
+                    }
+                    else
+                    {
+                        name = helper.getName(r, currIdx);
+                    }
+
+                    names[i] = name;
+                    var nameBlock = helper.getNameSize(r, currIdx);
+                    currIdx += nameBlock[0];
+                    if (nameBlock[1] == 1) // there is a pointer in the name, skip the 2 bytes
+                    {
+                        currIdx += 2;
+                    }
+
+                    var type = helper.getType(r, currIdx);
+                    types[i] = type;
+                    currIdx += 2; // to move past the bytes for type
+
+                    // the following switch cases are for parsing the addresses for the request type
+                    switch (type.ToString())
+                    {
+                        case "A":
+                            currIdx = parser.typeAParse(r, classes, timeouts, addresses, i, currIdx);
+                            break;
+                        case "NS":
+                            currIdx = parser.typeNSParse(r, classes, timeouts, addresses, i, currIdx);
+                            break;
+                        case "CNAME":
+                            currIdx = parser.typeCNAMEParse(r, classes, timeouts, addresses, i, currIdx);
+                            break;
+                        case "SOA":
+                            currIdx = parser.typeSOAParse(r, classes, timeouts, addresses,
+                                mailboxes, serialNums, refreshIntrvls, retryIntrvls,
+                                expireLimits, minTTLs, i, currIdx);
+                            break;
+                        case "PTR":
+                            currIdx = parser.typePTRParse(r, classes, timeouts, addresses, i, currIdx);
+                            break;
+                        case "MX":
+                            // note for this case, addresses represents preference number of the mail server
+                            currIdx = parser.typeMXParse(r, classes, timeouts, addresses, mailboxes, i, currIdx);
+                            break;
+                        case "AAAA":
+                            currIdx = parser.typeAAAAParse(r, classes, timeouts, addresses, i, currIdx);
+                            break;
+                    }
                 }
-                else
+
+                // final printout for answers section, if there are answers
+                var RR = 0;
+                if (answers > 0)
                 {
-                    name = helper.getName(r, currIdx);
+                    Console.WriteLine();
+                    Console.WriteLine(";; ANSWER SECTION:");
+                    for (var i = 0; i < answers; i++)
+                    {
+                        var result = new StringBuilder();
+                        result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4}",
+                            names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR]);
+                        // if the record type is SOA, print these out, as well
+                        if (types[RR].Equals("SOA"))
+                        {
+                            result.AppendFormat("{0, -1} {1, -2} {2, -2} {3, -2} {4, -2} {5, -2} {6}", "",
+                                mailboxes[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
+                                expireLimits[RR], minTTLs[RR]);
+                        }
+                        else if (types[RR].Equals("MX"))
+                        {
+                            result.Append("  " + mailboxes[RR]);
+                        }
+
+                        Console.WriteLine(result);
+                        RR++;
+                    }
                 }
-                names[i] = name;
-                var nameBlock = helper.getNameSize(r, currIdx);
-                currIdx += nameBlock[0];
-                if (nameBlock[1] == 1) // there is a pointer in the name, skip the 2 bytes
+
+                // final printout for authority section, if there are any authority resource records
+                if (authorityRRs > 0)
                 {
-                    currIdx += 2;
+                    Console.WriteLine();
+                    Console.WriteLine(";; AUTHORITY SECTION:");
+                    for (var i = 0; i < authorityRRs; i++)
+                    {
+                        var result = new StringBuilder();
+                        result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4}",
+                            names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR]);
+                        if (types[RR].Equals("SOA"))
+                        {
+                            result.AppendFormat("{0, -1} {1, -2} {2, -2} {3, -2} {4, -2} {5, -2} {6}", "",
+                                mailboxes[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
+                                expireLimits[RR], minTTLs[RR]);
+                        }
+
+                        Console.WriteLine(result);
+                        RR++;
+                    }
                 }
-                
-                var type = helper.getType(r, currIdx);
-                types[i] = type;
-                currIdx += 2; // to move past the bytes for type
-                
-                // the following switch cases are for parsing the addresses for the request type
-                switch (type.ToString())
+
+                // final printout for additional section, if there are any additional resource records
+                if (additionalRRs > 0)
                 {
-                    case "A":
-                        currIdx = parser.typeAParse(r, classes, timeouts, addresses, i, currIdx);
-                        break;
-                    case "NS":
-                        currIdx = parser.typeNSParse(r, classes, timeouts, addresses, i, currIdx);
-                        break;
-                    case "CNAME":
-                        currIdx = parser.typeCNAMEParse(r, classes, timeouts, addresses, i, currIdx);
-                        break;
-                    case "SOA":
-                        currIdx = parser.typeSOAParse(r, classes, timeouts, addresses,
-                                                      mailboxes, serialNums, refreshIntrvls, retryIntrvls,
-                                                      expireLimits, minTTLs, i, currIdx);
-                        break;
-                    case "PTR":
-                        currIdx = parser.typePTRParse(r, classes, timeouts, addresses, i, currIdx);
-                        break;
-                    case "MX":
-                        // note for this case, addresses represents preference number of the mail server
-                        currIdx = parser.typeMXParse(r, classes, timeouts, addresses, mailboxes, i, currIdx);
-                        break;
-                    case "AAAA":
-                        currIdx = parser.typeAAAAParse(r, classes, timeouts, addresses, i, currIdx);
-                        break;
+                    Console.WriteLine();
+                    Console.WriteLine(";; ADDITIONAL SECTION:");
+                    for (var i = 0; i < additionalRRs; i++)
+                    {
+                        var result = new StringBuilder();
+                        result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4}",
+                            names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR]);
+                        if (types[RR].Equals("SOA"))
+                        {
+                            result.AppendFormat("{0, -1} {1, -2} {2, -2} {3, -2} {4, -2} {5, -2} {6}", "",
+                                mailboxes[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
+                                expireLimits[RR], minTTLs[RR]);
+                        }
+                        else if (types[RR].Equals("MX"))
+                        {
+                            result.Append("  " + mailboxes[RR]);
+                        }
+
+                        Console.WriteLine(result);
+                        RR++;
+                    }
                 }
             }
-
-            // final printout for answers section, if there are answers
-            var RR = 0;
-            if (answers > 0)
+            else
             {
-                Console.WriteLine();
-                Console.WriteLine(";; ANSWER SECTION:");
-                for (var i = 0; i < answers; i++)
-                {
-                    var result = new StringBuilder();
-                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4}",
-                                        names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR]);
-                    // if the record type is SOA, print these out, as well
-                    if (types[RR].Equals("SOA"))
-                    {
-                        result.AppendFormat("{0, -1} {1, -2} {2, -2} {3, -2} {4, -2} {5, -2} {6}", "",
-                                            mailboxes[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
-                                            expireLimits[RR], minTTLs[RR]);
-                    }
-                    else if (types[RR].Equals("MX"))
-                    {
-                        result.Append("  " + mailboxes[RR]);
-                    }
-                    Console.WriteLine(result);
-                    RR++;
-                }
-            }
-
-            // final printout for authority section, if there are any authority resource records
-            if (authorityRRs > 0)
-            {
-                Console.WriteLine();
-                Console.WriteLine(";; AUTHORITY SECTION:");
-                for (var i = 0; i < authorityRRs; i++)
-                {
-                    var result = new StringBuilder();
-                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4}",
-                                        names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR]);
-                    if (types[RR].Equals("SOA"))
-                    {
-                        result.AppendFormat("{0, -1} {1, -2} {2, -2} {3, -2} {4, -2} {5, -2} {6}", "",
-                                            mailboxes[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
-                                            expireLimits[RR], minTTLs[RR]);
-                    }
-                    Console.WriteLine(result);
-                    RR++;
-                }
-            }
-            
-            // final printout for additional section, if there are any additional resource records
-            if (additionalRRs > 0)
-            {
-                Console.WriteLine();
-                Console.WriteLine(";; ADDITIONAL SECTION:");
-                for (var i = 0; i < additionalRRs; i++)
-                {
-                    var result = new StringBuilder();
-                    result.AppendFormat("{0, -24} {1, -8} {2, -8} {3, -8} {4}",
-                                        names[RR], timeouts[RR], classes[RR], types[RR], addresses[RR]);
-                    if (types[RR].Equals("SOA"))
-                    {
-                        result.AppendFormat("{0, -1} {1, -2} {2, -2} {3, -2} {4, -2} {5, -2} {6}", "",
-                                            mailboxes[RR], serialNums[RR], refreshIntrvls[RR], retryIntrvls[RR],
-                                            expireLimits[RR], minTTLs[RR]);
-                    }
-                    else if (types[RR].Equals("MX"))
-                    {
-                        result.Append("  " + mailboxes[RR]);
-                    }
-                    Console.WriteLine(result);
-                    RR++;
-                }
+                timedOut = true;
             }
         }
         
@@ -275,5 +289,22 @@ namespace ConsoleApplication
         {
             return this.timeStamp;
         }
+
+        /*
+         * Returns whether the connection timed out or not
+         */
+        public bool getTimedOut()
+        {
+            return this.timedOut;
+        }
+
+        /*
+         * Reset timedOut to be false
+         */
+        public void toggleTimedOut()
+        {
+            timedOut = false;
+        }
+           
     }
 }
